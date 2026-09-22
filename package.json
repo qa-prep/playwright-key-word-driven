@@ -1,0 +1,21 @@
+{
+  "name": "playwright",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@cucumber/cucumber": "^13.2.1",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.2",
+    "fast-glob": "^3.3.3",
+    "playwright-bdd": "^9.2.1"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.2",
+    "mysql2": "^3.24.4"
+  }
+}

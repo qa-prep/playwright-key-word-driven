@@ -1,0 +1,12 @@
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+/playwright/node_modules/
+/config/*.env
+!/config/*.env.example
+.features-gen/
+.DS_Store
