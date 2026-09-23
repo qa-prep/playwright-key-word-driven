@@ -16,6 +16,7 @@ When('I click the {string} {string}', async ({ page, vars }, nth, selector) => {
   await locator.nth(parseInt(nth, 10) - 1).click();
 });
 
+
 When('I double click {string}', async ({ page, vars }, selector) => {
   const locator = await resolveLocator(page, resolveVars(selector, vars));
   await locator.dblclick();

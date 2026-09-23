@@ -1,0 +1,57 @@
+<!-- location: keyword_driven/generic/fixtures/tabs-page.html -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tabs Test Fixture</title>
+<style>
+:root{
+  --n:#071f38;--n2:#082b4b;--d:#04182b;--b:#0a3963;
+  --w:#eef5fb;--m:#b9c9d8;--blue:#22a0ff;--orange:#ffb020;--green:#24c47a;
+}
+*{box-sizing:border-box}
+body{background:var(--n);color:var(--w);font-family:Arial,Helvetica,sans-serif;margin:0;padding:0}
+.w{max-width:1100px;margin:30px auto;background:var(--n);border:4px solid var(--b);border-radius:20px;overflow:hidden}
+.bar{height:56px;background:var(--d);border-bottom:4px solid var(--b);padding:0 24px;display:flex;align-items:center;gap:10px}
+.dot{width:14px;height:14px;border-radius:50%}
+.r{background:#ff6b6b}.o{background:var(--orange)}.g{background:var(--green)}
+.fn{margin-left:14px;color:var(--m);font:700 16px Consolas,monospace}
+.ct{padding:28px 40px;display:flex;flex-direction:column;gap:20px}
+.tag{align-self:flex-start;padding:6px 14px;background:var(--d);border-radius:7px;color:#8fcfff;font:800 14px Consolas,monospace}
+h1{font-size:28px;margin:0}
+.qa-banner{background:var(--d);border:2px solid var(--blue);border-radius:10px;padding:12px 18px;font:700 15px Consolas,monospace;color:var(--m)}
+.qa-banner a{color:var(--blue);text-decoration:none}
+.qa-banner a:hover{text-decoration:underline}
+.card{background:var(--n2);border:3px solid var(--b);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.label{font:800 15px Consolas,monospace;color:var(--orange)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+a.link-btn{font:800 13px Consolas,monospace;border:0;border-radius:6px;padding:10px 16px;color:#fff;background:#167fc9;text-decoration:none;display:inline-block}
+a.link-btn:hover{background:#1b91e3}
+</style>
+</head>
+<body>
+  <div class="w">
+    <div class="bar">
+      <i class="dot r"></i><i class="dot o"></i><i class="dot g"></i>
+      <span class="fn">tabs-page.html</span>
+    </div>
+    <div class="ct">
+      <div class="tag">TABS TEST FIXTURE</div>
+      <h1 id="heading">Tabs Test Page</h1>
+
+      <div class="qa-banner">
+        Built with the playwright-key-word-driven framework — watch tutorials and learn how to use it at
+        <a href="https://qa-prep.com" target="_blank" rel="noopener">qa-prep.com</a>
+      </div>
+
+      <section class="card">
+        <div class="label">LINKS (open in a new tab by default)</div>
+        <div class="btn-row">
+          <a id="open-tab-2" class="link-btn" href="tabs-page-2.html" target="_blank">Open Tab 2</a>
+          <a id="open-tab-3" class="link-btn" href="tabs-page-3.html" target="_blank">Open Tab 3</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>
