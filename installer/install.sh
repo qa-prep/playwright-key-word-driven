@@ -24,12 +24,12 @@ fi
 # 2. Apply canonical playwright.config.ts (only warn/prompt if it would
 #    actually overwrite something different)
 # ---------------------------------------------------------------------------
-if [ -f "$CANONICAL_DIR/playwright.config.ts" ]; then
+if [ -f "$CANONICAL_DIR/playwright.config.ts.bak" ]; then
   if [ ! -f "playwright.config.ts" ]; then
     echo "-> Copying framework's playwright.config.ts into place"
-    cp "$CANONICAL_DIR/playwright.config.ts" playwright.config.ts
+    cp "$CANONICAL_DIR/playwright.config.ts.bak" playwright.config.ts
 
-  elif diff -q "$CANONICAL_DIR/playwright.config.ts" playwright.config.ts >/dev/null 2>&1; then
+  elif diff -q "$CANONICAL_DIR/playwright.config.ts.bak" playwright.config.ts >/dev/null 2>&1; then
     echo "-> playwright.config.ts already matches canonical version, skipping"
 
   else
@@ -41,7 +41,7 @@ if [ -f "$CANONICAL_DIR/playwright.config.ts" ]; then
     read -p "Overwrite playwright.config.ts? [y/N] " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      cp "$CANONICAL_DIR/playwright.config.ts" playwright.config.ts
+      cp "$CANONICAL_DIR/playwright.config.ts.bak" playwright.config.ts
       echo "-> playwright.config.ts overwritten"
     else
       echo "-> Skipped — keeping your existing playwright.config.ts"
