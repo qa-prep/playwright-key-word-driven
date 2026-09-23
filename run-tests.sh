@@ -53,6 +53,7 @@ SPEED="${SPEED:-fast}"
 SCREENSHOT_ON_FAIL="${SCREENSHOT_ON_FAIL:-true}"
 SLACK_ENABLED="${SLACK_ENABLED:-false}"
 SLACK_NOTIFY_MODE="${SLACK_NOTIFY_MODE:-on-failure}"
+SLACK_NEVER_IN_DEBUG="${SLACK_NEVER_IN_DEBUG:-true}"
 
 for arg in "$@"; do
   key="${arg%%=*}"
@@ -72,6 +73,7 @@ for arg in "$@"; do
     api_url) export API_URL="$value" ;;
     slack-enabled) SLACK_ENABLED="$value" ;;
     slack-notify-mode) SLACK_NOTIFY_MODE="$value" ;;
+    slack-never-in-debug) SLACK_NEVER_IN_DEBUG="$value" ;;
     screenshot-on-fail) SCREENSHOT_ON_FAIL="$value" ;;
     *) echo "Unknown argument: $key" >&2; exit 1 ;;
   esac
@@ -108,6 +110,16 @@ case "$WORKERS" in
   *) ;;
 esac
 
+case "$SLACK_NEVER_IN_DEBUG" in
+  true|false) ;;
+  *) echo "slack-never-in-debug must be true or false" >&2; exit 1 ;;
+esac
+
+SLACK_SUPPRESSED_BY_DEBUG=false
+if [ "$SLACK_NEVER_IN_DEBUG" = "true" ] && [ "$DEBUG_MODE" != "off" ]; then
+  SLACK_SUPPRESSED_BY_DEBUG=true
+fi
+
 case "$SPEED" in
   fast|medium|slow|vslow) ;;
   *) echo "speed must be fast, medium, slow, or vslow" >&2; exit 1 ;;
@@ -125,6 +137,7 @@ esac
 
 export SLACK_ENABLED
 export SLACK_NOTIFY_MODE
+export SLACK_NEVER_IN_DEBUG
 export DEBUG_MODE
 export BROWSERS="$BROWSERS_RESOLVED"
 export WORKERS
@@ -152,6 +165,26 @@ REPORT_TIME="$(date +%H%M%S)"
 REPORT_BASE="playwright-report/${PROJECT}/${REPORT_DATE}/${REPORT_TIME}"
 
 IFS=',' read -ra BROWSER_LIST <<< "$BROWSERS_RESOLVED"
+
+RUN_COMMAND="./run-tests.sh tests-type=${TESTS_TYPE} project=${PROJECT} env=${ENV} browsers=${BROWSERS_RESOLVED} headed=${HEADED} debug-mode=${DEBUG_MODE} speed=${SPEED} report=${REPORT_MODE} workers=${WORKERS}"
+if [ -n "$TAGS_CLEAN" ]; then
+  RUN_COMMAND="${RUN_COMMAND} tags=${TAGS_CLEAN}"
+fi
+
+
+RUN_START_EPOCH=$(date +%s)
+RUN_START_HUMAN=$(date "+%Y-%m-%d %H:%M:%S")
+
+if [ "$SLACK_ENABLED" = "true" ] && [ "$SLACK_SUPPRESSED_BY_DEBUG" = "false" ]; then
+  node scripts/notify-slack.mjs \
+    --phase=start \
+    --env="$ENV" \
+    --project="$PROJECT" \
+    --tags="$TAGS_CLEAN" \
+    --browsers="$BROWSERS_RESOLVED" \
+    --run-command="$RUN_COMMAND" \
+    --start-human="$RUN_START_HUMAN" || echo "Slack start notification failed, continuing" >&2
+fi
 
 run_spec() {
   mkdir -p "${REPORT_BASE}/spec"
@@ -232,13 +265,22 @@ if [ "$TESTS_TYPE" = "feature" ] || [ "$TESTS_TYPE" = "all" ]; then
 fi
 RESULTS_JOINED=$(IFS=,; echo "${RESULTS_FILES[*]}")
 
-if [ "$SLACK_ENABLED" = "true" ]; then
+RUN_END_EPOCH=$(date +%s)
+RUN_END_HUMAN=$(date "+%Y-%m-%d %H:%M:%S")
+DURATION_SECONDS=$((RUN_END_EPOCH - RUN_START_EPOCH))
+
+if [ "$SLACK_ENABLED" = "true" ] && [ "$SLACK_SUPPRESSED_BY_DEBUG" = "false" ]; then
   node scripts/notify-slack.mjs \
+    --phase=finish \
     --results="$RESULTS_JOINED" \
     --env="$ENV" \
     --project="$PROJECT" \
     --tags="$TAGS_CLEAN" \
-    --browsers="$BROWSERS_RESOLVED" || echo "Slack notification failed, continuing" >&2
+    --run-command="$RUN_COMMAND" \
+    --browsers="$BROWSERS_RESOLVED" \
+    --start-human="$RUN_START_HUMAN" \
+    --end-human="$RUN_END_HUMAN" \
+    --duration-seconds="$DURATION_SECONDS" || echo "Slack notification failed, continuing" >&2
 fi
 
 if [ "$OPEN_NOW" = true ] && [ -n "$OPEN_REPORT_DIR" ]; then
