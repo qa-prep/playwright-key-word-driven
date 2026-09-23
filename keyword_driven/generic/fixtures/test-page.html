@@ -1,0 +1,72 @@
+<!-- location: keyword_driven/generic/fixtures/test-page.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Keyword Driven Test Fixture</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  .hidden { display: none; }
+  #tall-content { height: 2000px; background: linear-gradient(#eee, #999); }
+  #styled-text { color: rgb(0, 128, 0); }
+</style>
+</head>
+<body>
+
+  <h1 id="heading">Test Fixture Page</h1>
+
+  <p id="content-text">Hello, this is some sample text.</p>
+  <p id="styled-text">This text is green.</p>
+
+  <input id="text-field" type="text" value="">
+  <input id="checkbox-field" type="checkbox">
+  <button id="disabled-btn" disabled>Disabled Button</button>
+  <button id="enabled-btn">Enabled Button</button>
+
+  <button id="click-counter-btn" data-count="0">Click me (0)</button>
+
+  <button class="list-item">Item 1</button>
+  <button class="list-item">Item 2</button>
+  <button class="list-item">Item 3</button>
+
+  <div id="hover-target" title="I am hoverable">Hover over me</div>
+
+  <button id="dblclick-btn">Double click me</button>
+
+  <div id="attribute-target" data-state="off">Attribute target</div>
+
+  <div id="toggle-visibility" class="hidden">I was hidden</div>
+  <button id="toggle-visibility-btn">Toggle visibility</button>
+
+  <input id="upload-field" type="file">
+
+  <a id="go-to-page-2" href="test-page-2.html">Go to page 2</a>
+
+  <div id="scroll-target" style="margin-top: 1500px;">Scroll target reached</div>
+  <div id="tall-content"></div>
+
+  <div id="delayed-element" class="hidden">I appear after a delay</div>
+
+  <script>
+    document.getElementById('click-counter-btn').addEventListener('click', (e) => {
+      const btn = e.target;
+      const count = parseInt(btn.dataset.count, 10) + 1;
+      btn.dataset.count = count;
+      btn.textContent = `Click me (${count})`;
+    });
+
+    document.getElementById('dblclick-btn').addEventListener('dblclick', (e) => {
+      e.target.textContent = 'Double clicked!';
+    });
+
+    document.getElementById('toggle-visibility-btn').addEventListener('click', () => {
+      document.getElementById('toggle-visibility').classList.toggle('hidden');
+    });
+
+    setTimeout(() => {
+      document.getElementById('delayed-element').classList.remove('hidden');
+    }, 1500);
+  </script>
+
+</body>
+</html>

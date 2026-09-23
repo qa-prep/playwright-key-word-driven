@@ -88,6 +88,7 @@ install_if_missing dotenv
 install_if_missing mysql2
 install_if_missing playwright-bdd dev
 install_if_missing @cucumber/cucumber dev
+install_if_missing @types/node dev
 
 # ---------------------------------------------------------------------------
 # 4. Make run script executable
@@ -99,3 +100,22 @@ fi
 
 echo ""
 echo "== Install complete =="
+
+
+
+
+# ---------------------------------------------------------------------------
+# 5. Done
+# ---------------------------------------------------------------------------
+echo ""
+echo "== Install complete =="
+echo ""
+GREEN='\033[0;32m'
+NC='\033[0m'
+echo ""
+echo -e "${GREEN}================================================================${NC}"
+echo -e "${GREEN}  Install complete! Run your first test:${NC}"
+echo -e "${GREEN}================================================================${NC}"
+echo -e "${GREEN}  ./run-tests.sh tests-type=feature project=myProjectA tags=@register debug-mode=all${NC}"
+echo -e "${GREEN}================================================================${NC}"
+echo ""
