@@ -10,3 +10,4 @@ node_modules/
 !/config/*.env.example
 .features-gen/
 .DS_Store
+/playwright.config.ts
