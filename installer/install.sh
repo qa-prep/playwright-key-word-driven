@@ -108,8 +108,6 @@ echo "== Install complete =="
 # 5. Done
 # ---------------------------------------------------------------------------
 echo ""
-echo "== Install complete =="
-echo ""
 GREEN='\033[0;32m'
 NC='\033[0m'
 echo ""
@@ -118,4 +116,11 @@ echo "-> ${GREEN}  Install complete! Run your first key word driven test:${NC}"
 echo "-> ${GREEN}================================================================${NC}"
 echo "-> ${GREEN}  ./run-tests.sh tests-type=feature project=myProjectA tags=@register debug-mode=all${NC}"
 echo "-> ${GREEN}================================================================${NC}"
+echo ""
+echo "-> ${GREEN}  Watch tutorials and learn how to use this framework at qa-prep.com${NC}"
+echo "-> ${GREEN}================================================================${NC}"
+echo "" 
+echo "-> examples :"
+echo "->   ./run-tests.sh tests-type=feature project=myProjectA tags=@keywordTest debug-mode=all headed=true"
+echo "->   ./run-tests.sh project=myProjectA tags=@keywordTest"
 echo ""

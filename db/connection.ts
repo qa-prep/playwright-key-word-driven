@@ -4,7 +4,8 @@ import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
 
 dotenv.config({
-  path: './config/local.env'
+  path: './config/local.env',
+  quiet: true
 });
 
 let pool: mysql.Pool | null = null;

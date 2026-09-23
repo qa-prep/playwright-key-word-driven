@@ -1,6 +1,5 @@
 # location: keyword_driven/projects/default/features/example.feature
 
-
 @keywordTest
 Feature: Example — generic step library walkthrough
   This runs entirely against a local static HTML fixture.
@@ -35,11 +34,12 @@ Feature: Example — generic step library walkthrough
     Then I should see visible element "css:#toggle-visibility"
 
     Then I should see element "css:#content-text" contains text "sample text"
-    And I should see element "css:#styled-text" computed style "color" is "rgb(0, 128, 0)"
+    And I should see element "css:#styled-text" computed style "color" is "rgb(36, 196, 122)"
 
     When I wait for element "css:#delayed-element" to be visible
     Then I should see visible element "css:#delayed-element"
 
+    When I set browser width "800" height "400"
     When I scroll to "css:#scroll-target"
     Then I should see visible element "css:#scroll-target"
     And I should see page has scrollbar

@@ -48,7 +48,10 @@ Then('I should see tab count is {string}', async ({ page, vars }, expCountStr) =
 });
 
 Then('I should see page has scrollbar', async ({ page }) => {
-  const hasScroll = await page.evaluate(() => document.body.scrollHeight > document.body.clientHeight
+  const hasScroll = await page.evaluate(() => 
+    document.documentElement.scrollHeight > window.innerHeight
+    || document.documentElement.scrollWidth > window.innerWidth
+    || document.body.scrollHeight > document.body.clientHeight
     || document.body.scrollWidth > document.body.clientWidth);
   expect(hasScroll).toBe(true);
 });

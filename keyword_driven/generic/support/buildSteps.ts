@@ -1,4 +1,4 @@
-// location: keyword_driven/support/buildSteps.ts
+// location: keyword_driven/generic/support/buildSteps.ts
 import fg from 'fast-glob';
 import path from 'path';
 
@@ -11,7 +11,7 @@ import path from 'path';
  * is left out automatically — no manual exclude list required.
  */
 export function stepsForProject(projectName: string) {
-  const genericFiles = fg.sync('keyword_driven/generic/steps//**/*.ts');
+  const genericFiles = fg.sync('keyword_driven/generic/steps/**/*.ts');
   const projectFiles = fg.sync(`keyword_driven/projects/${projectName}/steps/**/*.ts`);
 
   const projectBasenames = new Set(projectFiles.map((f) => path.basename(f)));
@@ -20,6 +20,6 @@ export function stepsForProject(projectName: string) {
   return [
     ...filteredGeneric,
     ...projectFiles,
-    'keyword_driven/support/**/*.ts',
+    'keyword_driven/generic/support/**/*.ts',
   ];
 }

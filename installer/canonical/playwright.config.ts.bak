@@ -15,7 +15,6 @@ const bddConfigs = Object.fromEntries(
       outputDir: `.features-gen/${name}`,
       features: `keyword_driven/projects/${name}/features/**/*.feature`,
       steps: stepsForProject(name),
-      importTestFrom: 'keyword_driven/generic/support/vars.ts',
     }),
   ]),
 );
@@ -24,7 +23,6 @@ const defaultBdd = defineBddConfig({
   outputDir: '.features-gen/default',
   features: 'keyword_driven/projects/default/features/**/*.feature',
   steps: stepsForProject('default'),
-  importTestFrom: 'keyword_driven/generic/support/vars.ts',
 });
 
 const REPORT_DIR = process.env.REPORT_DIR ?? 'playwright-report/adhoc';
