@@ -5,11 +5,38 @@
 
 set -euo pipefail
 
-# --- load defaults, lowest precedence first ---
-# set -a auto-exports everything sourced below, so child processes (npx
-# playwright, npx bddgen) can see them without listing each var manually.
+# --- figure out which environment we're targeting, before anything else,
+# since it decides which settings file (and DB/app URLs) get loaded below.
+# This is only a first pass looking for env=; the full argument parse still
+# happens further down, so env= can appear anywhere on the command line
+# same as any other flag.
+ENV="local"
+for arg in "$@"; do
+  case "$arg" in
+    env=*) ENV="${arg#env=}" ;;
+  esac
+done
+
+# --- load the environment file (DB creds, app/api URLs, and which settings
+# file to use), lowest precedence first ---
+ENV_FILE="config/${ENV}.env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "No environment file found at ${ENV_FILE} (env=${ENV})" >&2
+  exit 1
+fi
 set -a
-[ -f "config/test-defaults.config" ] && source "config/test-defaults.config"
+source "$ENV_FILE"
+set +a
+
+# --- load the settings file the env file points at (falls back to the
+# canonical defaults if the env file didn't set SETTINGS_FILE) ---
+SETTINGS_FILE="${SETTINGS_FILE:-config/default-settings.config}"
+if [ ! -f "$SETTINGS_FILE" ]; then
+  echo "SETTINGS_FILE=${SETTINGS_FILE} (from ${ENV_FILE}) not found" >&2
+  exit 1
+fi
+set -a
+source "$SETTINGS_FILE"
 set +a
 
 TESTS_TYPE="${TESTS_TYPE:-all}"
@@ -37,6 +64,7 @@ for arg in "$@"; do
     browsers) BROWSERS="$value" ;;
     workers) WORKERS="$value" ;;
     speed) SPEED="$value" ;;
+    env) ENV="$value" ;;  # already resolved above; kept here so it's a recognised flag, not "Unknown argument"
     app_url) export APP_URL="$value" ;;
     api_url) export API_URL="$value" ;;
     *) echo "Unknown argument: $key" >&2; exit 1 ;;
@@ -58,7 +86,6 @@ case "$WORKERS" in
   ''|*[!0-9]*) echo "workers must be 'default', 'max', or a positive whole number" >&2; exit 1 ;;
   *) ;;
 esac
-
 
 case "$SPEED" in
   fast|medium|slow|vslow) ;;
@@ -84,9 +111,13 @@ if [ "$DEBUG_MODE" != "off" ]; then
   ORANGE='\033[38;5;208m'
   NC='\033[0m'
   MSG="[debug-mode=${DEBUG_MODE}] forcing a single worker — tests will run serially, not in parallel"
+  ENVMSG="[env: $ENV | browser: $BROWSERS_RESOLVED | speed: $SPEED | headed: $HEADED | report: $REPORT_MODE"
+  APPMSG="[app_url: $APP_URL | api_url: $API_URL]"
   BORDER=$(printf '%*s' "$((${#MSG} + 4))" '' | tr ' ' '*')
   echo -e "${ORANGE}${BORDER}${NC}"
   echo -e "${ORANGE}* ${MSG} *${NC}"
+  echo -e "${ORANGE}* ${ENVMSG} *${NC}"
+  echo -e "${ORANGE}* ${APPMSG} *${NC}"
   echo -e "${ORANGE}${BORDER}${NC}"
   export PW_DEBUG_WARNED=1
 fi

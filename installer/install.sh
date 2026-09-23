@@ -67,22 +67,22 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 2.5. Lay down config/test-defaults.config from canonical, but only if the
+# 2.5. Lay down config/default-settings.config from canonical, but only if the
 #      user doesn't already have one. Unlike playwright.config.ts above,
 #      there's no overwrite prompt here: this file is meant to be edited
 #      freely per-repo, and a developer's personal overrides belong in
-#      config/test-defaults.config exists we never touch it again.
+#      config/default-settings.config exists we never touch it again.
 # ---------------------------------------------------------------------------
-if [ -f "$CANONICAL_DIR/test-defaults.config" ]; then
-  if [ -f "config/test-defaults.config" ]; then
-    echo "-> config/test-defaults.config already exists, skipping"
+if [ -f "$CANONICAL_DIR/default-settings.config" ]; then
+  if [ -f "config/default-settings.config" ]; then
+    echo "-> config/default-settings.config already exists, skipping"
   else
-    echo "-> Copying framework's config/test-defaults.config into place"
+    echo "-> Copying framework's config/default-settings.config into place"
     mkdir -p config
-    cp "$CANONICAL_DIR/test-defaults.config" config/test-defaults.config
+    cp "$CANONICAL_DIR/default-settings.config" config/default-settings.config
   fi
 else
-  echo "!! No canonical test-defaults.config found in $CANONICAL_DIR — nothing to apply"
+  echo "!! No canonical default-settings.config found in $CANONICAL_DIR — nothing to apply"
 fi
 
 # ---------------------------------------------------------------------------
