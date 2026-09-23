@@ -67,6 +67,25 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 2.5. Lay down config/test-defaults.config from canonical, but only if the
+#      user doesn't already have one. Unlike playwright.config.ts above,
+#      there's no overwrite prompt here: this file is meant to be edited
+#      freely per-repo, and a developer's personal overrides belong in
+#      config/test-defaults.config exists we never touch it again.
+# ---------------------------------------------------------------------------
+if [ -f "$CANONICAL_DIR/test-defaults.config" ]; then
+  if [ -f "config/test-defaults.config" ]; then
+    echo "-> config/test-defaults.config already exists, skipping"
+  else
+    echo "-> Copying framework's config/test-defaults.config into place"
+    mkdir -p config
+    cp "$CANONICAL_DIR/test-defaults.config" config/test-defaults.config
+  fi
+else
+  echo "!! No canonical test-defaults.config found in $CANONICAL_DIR — nothing to apply"
+fi
+
+# ---------------------------------------------------------------------------
 # 3. Core dependencies
 # ---------------------------------------------------------------------------
 install_if_missing() {
@@ -121,6 +140,7 @@ echo "-> ${GREEN}  Watch tutorials and learn how to use this framework at qa-pre
 echo "-> ${GREEN}================================================================${NC}"
 echo "" 
 echo "-> examples :"
-echo "->   ./run-tests.sh tests-type=feature project=myProjectA tags=@keywordTest debug-mode=all headed=true"
 echo "->   ./run-tests.sh project=myProjectA tags=@keywordTest"
+echo "->   ./run-tests.sh tests-type=feature project=myProjectA tags=@keywordTest headed=true"
+echo "->   ./run-tests.sh tests-type=feature project=myProjectA tags=@keywordTest debug-mode=all headed=true speed=slow"
 echo ""

@@ -3,9 +3,10 @@ import { defineConfig } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
 import fg from 'fast-glob';
 import path from 'path';
-import { stepsForProject } from './keyword_driven/generic/support/buildSteps';
+import os from 'os';
+import { stepsForProject } from './tests_keyword_driven/generic/support/buildSteps';
 
-const projectNames = fg.sync('keyword_driven/projects/*', { onlyDirectories: true })
+const projectNames = fg.sync('tests_keyword_driven/projects/*', { onlyDirectories: true })
   .map((dir) => path.basename(dir));
 
 const bddConfigs = Object.fromEntries(
@@ -13,17 +14,49 @@ const bddConfigs = Object.fromEntries(
     name,
     defineBddConfig({
       outputDir: `.features-gen/${name}`,
-      features: `keyword_driven/projects/${name}/features/**/*.feature`,
+      features: `tests_keyword_driven/projects/${name}/features/**/*.feature`,
       steps: stepsForProject(name),
     }),
   ]),
 );
 
+
+// Speed knob for headed/debug runs: inserts a delay before every Playwright
+// action (click, fill, etc.), purely for human-watchable runs. Doesn't touch
+// assertions/backoff waits already in the step library, only action timing.
+//   fast   (default) -> 0ms
+//   medium            -> 250ms
+//   slow              -> 750ms
+//   vslow             -> 1500ms
+const SPEED_MS: Record<string, number> = { fast: 0, medium: 250, slow: 750, vslow: 1500 };
+const SPEED = (process.env.SPEED ?? 'fast').trim().toLowerCase();
+const slowMo = SPEED_MS[SPEED] ?? 0;
+
 const defaultBdd = defineBddConfig({
   outputDir: '.features-gen/default',
-  features: 'keyword_driven/projects/default/features/**/*.feature',
+  features: 'tests_keyword_driven/projects/default/features/**/*.feature',
   steps: stepsForProject('default'),
 });
+
+// run-tests.sh resolves "mixed" into the full comma-separated list before
+// exporting BROWSERS, so this config only ever needs to understand a plain
+// list of browser keys. Direct `npx playwright test` invocations (bypassing
+// the script) fall back to chrome alone.
+const BROWSER_DEFS = {
+  chrome: 'chromium',
+  firefox: 'firefox',
+  safari: 'webkit',
+} as const;
+type BrowserKey = keyof typeof BROWSER_DEFS;
+const ALL_BROWSER_KEYS = Object.keys(BROWSER_DEFS) as BrowserKey[];
+
+function resolveBrowserKeys(): BrowserKey[] {
+  const raw = (process.env.BROWSERS ?? 'chrome').trim().toLowerCase();
+  const requested = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  const valid = requested.filter((k): k is BrowserKey => (ALL_BROWSER_KEYS as string[]).includes(k));
+  return valid.length > 0 ? valid : ['chrome'];
+}
+const browserKeys = resolveBrowserKeys();
 
 const REPORT_DIR = process.env.REPORT_DIR ?? 'playwright-report/adhoc';
 const REPORT_OPEN = process.env.REPORT_OPEN ?? 'never';
@@ -37,21 +70,29 @@ const TEST_TIMEOUT = IS_DEBUG_RUN ? 120_000 : 30_000;
 
 // Our Before/BeforeStep/AfterStep/After logging in stepLogger.ts already
 // prints a full, correctly-ordered account of every scenario during debug
-// runs. Playwright's built-in console reporters ('list', 'dot', etc.) all
-// write their own progress output to stdout too, and since 'dot' writes bare
-// '.'/'F' characters with no newline of their own, they land wherever the
-// cursor happens to be and visually collide with our banners. So during
-// debug runs, skip the console reporter entirely, our own logging is the
-// console output. Full detail is still captured in the HTML report either
-// way.
+// runs, so during debug runs we skip Playwright's own console reporter
+// entirely rather than have its output collide with ours. Full detail is
+// still captured in the HTML report either way.
 const consoleReporters: any[] = IS_DEBUG_RUN ? [] : [['list']];
 
+
 // Our feature/scenario header tracking in stepLogger.ts uses module-level
-// state that assumes tests run one at a time in a single process. With
-// multiple workers, each worker's console output would interleave and the
-// feature/scenario grouping would look scrambled even though each worker's
-// own logic is correct. Force serial execution for debug runs.
-const workers = IS_DEBUG_RUN ? 1 : undefined;
+// state that assumes tests run one at a time in a single process, so debug
+// runs are always forced to a single worker regardless of what WORKERS is
+// set to. Outside of debug runs, WORKERS controls concurrency:
+//   "default" -> leave it to Playwright's own default (~half your cores
+//                locally, 1 under CI detection)
+//   "max"     -> use every logical CPU core reported by the OS
+//   a number  -> that exact worker count
+function resolveWorkers(): number | undefined {
+  if (IS_DEBUG_RUN) return 1;
+  const raw = (process.env.WORKERS ?? 'default').trim().toLowerCase();
+  if (raw === 'default' || raw === '') return undefined;
+  if (raw === 'max') return os.cpus().length;
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+const workers = resolveWorkers();
 
 const reporters: any[] =
   REPORT_OPEN === 'none'
@@ -61,18 +102,36 @@ const reporters: any[] =
         ['html', { outputFolder: REPORT_DIR, open: REPORT_OPEN === 'none' ? 'never' : REPORT_OPEN }],
       ];
 
+const specProjects = browserKeys.map((key) => ({
+  name: `spec-${key}`,
+  testDir: 'tests',
+  use: { browserName: BROWSER_DEFS[key] },
+}));
+
+const defaultFeatureProjects = browserKeys.map((key) => ({
+  name: `feature-default-${key}`,
+  testDir: defaultBdd,
+  use: { browserName: BROWSER_DEFS[key] },
+}));
+
+const namedFeatureProjects = projectNames.flatMap((name) =>
+  browserKeys.map((key) => ({
+    name: `feature-${name}-${key}`,
+    testDir: bddConfigs[name],
+    use: { browserName: BROWSER_DEFS[key] },
+  })),
+);
+
 export default defineConfig({
   timeout: TEST_TIMEOUT,
   workers,
+  use: {
+    launchOptions: { slowMo },
+  },
   reporter: reporters,
   projects: [
-    { name: 'spec-chromium', testDir: 'tests', use: { browserName: 'chromium' } },
-    { name: 'spec-firefox', testDir: 'tests', use: { browserName: 'firefox' } },
-    { name: 'feature-default', testDir: defaultBdd, use: { browserName: 'chromium' } },
-    ...projectNames.map((name) => ({
-      name: `feature-${name}`,
-      testDir: bddConfigs[name],
-      use: { browserName: 'chromium' as const },
-    })),
+    ...specProjects,
+    ...defaultFeatureProjects,
+    ...namedFeatureProjects,
   ],
 });

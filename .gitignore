@@ -11,3 +11,4 @@ node_modules/
 .features-gen/
 .DS_Store
 /playwright.config.ts
+/config/*.config

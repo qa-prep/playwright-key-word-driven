@@ -1,17 +1,28 @@
 #!/usr/bin/env bash
 
-#usage: ./run-tests.sh tests-type=feature project=myProjectA tags=@register report=on-failure debug-mode=all headed=true
+#usage:  ./run-tests.sh tests-type=feature project=myProjectA tags=@keywordTest debug-mode=all headed=true"
+#usage:  ./run-tests.sh project=myProjectA tags=@keywordTest"
 
 set -euo pipefail
 
-TESTS_TYPE="all"
-TAGS=""
-PROJECT="default"
-HEADED="false"
-REPORT_MODE="never"
-DEBUG_MODE="off"
+# --- load defaults, lowest precedence first ---
+# set -a auto-exports everything sourced below, so child processes (npx
+# playwright, npx bddgen) can see them without listing each var manually.
+set -a
+[ -f "config/test-defaults.config" ] && source "config/test-defaults.config"
+set +a
+
+TESTS_TYPE="${TESTS_TYPE:-all}"
+TAGS="${TAGS:-}"
+PROJECT="${PROJECT:-default}"
+HEADED="${HEADED:-false}"
+REPORT_MODE="${REPORT_MODE:-never}"
+DEBUG_MODE="${DEBUG_MODE:-off}"
+BROWSERS="${BROWSERS:-chrome}"
+WORKERS="${WORKERS:-default}"
 TEST_EXIT_CODE=0
 OPEN_REPORT_DIR=""
+SPEED="${SPEED:-fast}"
 
 for arg in "$@"; do
   key="${arg%%=*}"
@@ -23,6 +34,9 @@ for arg in "$@"; do
     report) REPORT_MODE="$value" ;;
     debug-mode) DEBUG_MODE="$value" ;;
     headed) HEADED="$value" ;;
+    browsers) BROWSERS="$value" ;;
+    workers) WORKERS="$value" ;;
+    speed) SPEED="$value" ;;
     app_url) export APP_URL="$value" ;;
     api_url) export API_URL="$value" ;;
     *) echo "Unknown argument: $key" >&2; exit 1 ;;
@@ -39,7 +53,43 @@ case "$DEBUG_MODE" in
   *) echo "debug-mode must be all, sql, steps or off" >&2; exit 1 ;;
 esac
 
+case "$WORKERS" in
+  default|max) ;;
+  ''|*[!0-9]*) echo "workers must be 'default', 'max', or a positive whole number" >&2; exit 1 ;;
+  *) ;;
+esac
+
+
+case "$SPEED" in
+  fast|medium|slow|vslow) ;;
+  *) echo "speed must be fast, medium, slow, or vslow" >&2; exit 1 ;;
+esac
+
+# Resolve "mixed" to the actual browser list here, rather than pushing that
+# keyword down into playwright.config.ts, so the config only ever has to
+# understand a plain comma-separated list.
+case "$BROWSERS" in
+  mixed) BROWSERS_RESOLVED="chrome,firefox,safari" ;;
+  chrome|firefox|safari) BROWSERS_RESOLVED="$BROWSERS" ;;
+  chrome,firefox|chrome,safari|firefox,safari|chrome,firefox,safari) BROWSERS_RESOLVED="$BROWSERS" ;;
+  *) echo "browsers must be chrome, firefox, safari, mixed, or a comma-separated list of chrome/firefox/safari" >&2; exit 1 ;;
+esac
+
 export DEBUG_MODE
+export BROWSERS="$BROWSERS_RESOLVED"
+export WORKERS
+export SPEED
+
+if [ "$DEBUG_MODE" != "off" ]; then
+  ORANGE='\033[38;5;208m'
+  NC='\033[0m'
+  MSG="[debug-mode=${DEBUG_MODE}] forcing a single worker — tests will run serially, not in parallel"
+  BORDER=$(printf '%*s' "$((${#MSG} + 4))" '' | tr ' ' '*')
+  echo -e "${ORANGE}${BORDER}${NC}"
+  echo -e "${ORANGE}* ${MSG} *${NC}"
+  echo -e "${ORANGE}${BORDER}${NC}"
+  export PW_DEBUG_WARNED=1
+fi
 
 TAGS_CLEAN=$(echo "$TAGS" | tr -d ' ')
 
@@ -47,11 +97,16 @@ REPORT_DATE="$(date +%Y-%m-%d)"
 REPORT_TIME="$(date +%H%M%S)"
 REPORT_BASE="playwright-report/${PROJECT}/${REPORT_DATE}/${REPORT_TIME}"
 
+IFS=',' read -ra BROWSER_LIST <<< "$BROWSERS_RESOLVED"
+
 run_spec() {
   mkdir -p "${REPORT_BASE}/spec"
   export REPORT_DIR="${REPORT_BASE}/spec"
   OPEN_REPORT_DIR="${REPORT_BASE}/spec"
-  local args=(test --project=spec-chromium)
+  local args=(test)
+  for b in "${BROWSER_LIST[@]}"; do
+    args+=("--project=spec-${b}")
+  done
   if [ -n "$TAGS_CLEAN" ]; then
     args+=("--grep=$(echo "$TAGS_CLEAN" | tr ',' '|')")
   fi
@@ -71,7 +126,10 @@ run_feature() {
   fi
   npx bddgen "${bddgen_args[@]}"
 
-  local test_args=(test --project="feature-${PROJECT}")
+  local test_args=(test)
+  for b in "${BROWSER_LIST[@]}"; do
+    test_args+=("--project=feature-${PROJECT}-${b}")
+  done
   if [ "$HEADED" = "true" ]; then
     test_args+=("--headed")
   fi
@@ -96,7 +154,7 @@ if [ "$DEBUG_MODE" != "all" ] || [ "$HEADED" != "true" ]; then
   if [ -n "$TAGS_CLEAN" ]; then
     RERUN_CMD="${RERUN_CMD} tags=${TAGS_CLEAN}"
   fi
-  RERUN_CMD="${RERUN_CMD} debug-mode=all headed=true"
+  RERUN_CMD="${RERUN_CMD} debug-mode=all headed=true speed=slow"
 
   CYAN='\033[0;36m'
   NC='\033[0m'

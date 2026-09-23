@@ -2,7 +2,7 @@
 
 import { getDb } from '../connection';
 import { schema } from '../schema';
-import { debugLog } from '../../keyword_driven/generic/support/debug';
+import { debugLog } from '../../tests_keyword_driven/generic/support/debug';
 
 
 export async function getUsernameById(userId: number): Promise<string | null> {
