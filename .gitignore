@@ -6,8 +6,7 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 /playwright/node_modules/
-/config/*.env
-!/config/*.env.example
+/config/*
 .features-gen/
 .DS_Store
 /playwright.config.ts
