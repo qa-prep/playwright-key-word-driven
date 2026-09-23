@@ -13,13 +13,24 @@ echo "== Playwright keyword-driven framework installer =="
 # ---------------------------------------------------------------------------
 # 1. Base Playwright project
 # ---------------------------------------------------------------------------
+FIRST_TIME_INSTALLED=false
 if [ -f "playwright.config.ts" ]; then
   echo "-> playwright.config.ts already exists, skipping 'npm init playwright@latest'"
 else
   echo "-> Running npm init playwright@latest"
-  npm init playwright@latest
+  TMP_WORKFLOW=""
+  if [ -f ".github/workflows/playwright.yml" ]; then
+    TMP_WORKFLOW="$(mktemp)"
+    mv .github/workflows/playwright.yml "$TMP_WORKFLOW"
+  fi
+  npm init playwright@latest -- --quiet
+  if [ -n "$TMP_WORKFLOW" ]; then
+    mkdir -p .github/workflows
+    rm -f .github/workflows/playwright.yml
+    mv "$TMP_WORKFLOW" .github/workflows/playwright.yml
+  fi
+  FIRST_TIME_INSTALLED=true
 fi
-
 # ---------------------------------------------------------------------------
 # 2. Apply canonical playwright.config.ts (only warn/prompt if it would
 #    actually overwrite something different)
@@ -31,6 +42,10 @@ if [ -f "$CANONICAL_DIR/playwright.config.ts.bak" ]; then
 
   elif diff -q "$CANONICAL_DIR/playwright.config.ts.bak" playwright.config.ts >/dev/null 2>&1; then
     echo "-> playwright.config.ts already matches canonical version, skipping"
+
+  elif [ "$FIRST_TIME_INSTALLED" = true ]; then
+    echo "-> Replacing npm init's generic scaffold with framework's playwright.config.ts"
+    cp "$CANONICAL_DIR/playwright.config.ts.bak" playwright.config.ts
 
   else
     echo ""
