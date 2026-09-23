@@ -10,7 +10,6 @@ node_modules/
 .features-gen/
 .DS_Store
 /playwright.config.ts
-/config/*.config
 
 tests_keyword_driven/projects/*
 !tests_keyword_driven/projects/default
