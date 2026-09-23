@@ -1,4 +1,4 @@
-# location: tests_keyword_driven/projects/default/features/tabs.feature
+# location: tests_keyword_driven/projects/myProjectA/features/examplfail.feature
 
 @featureName.exampletabs @featureArea.tabs @exampleTests 
 Feature: Tab handling

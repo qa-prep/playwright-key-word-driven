@@ -50,6 +50,7 @@ WORKERS="${WORKERS:-default}"
 TEST_EXIT_CODE=0
 OPEN_REPORT_DIR=""
 SPEED="${SPEED:-fast}"
+SCREENSHOT_ON_FAIL="${SCREENSHOT_ON_FAIL:-true}"
 
 for arg in "$@"; do
   key="${arg%%=*}"
@@ -67,6 +68,7 @@ for arg in "$@"; do
     env) ENV="$value" ;;  # already resolved above; kept here so it's a recognised flag, not "Unknown argument"
     app_url) export APP_URL="$value" ;;
     api_url) export API_URL="$value" ;;
+    screenshot-on-fail) SCREENSHOT_ON_FAIL="$value" ;;
     *) echo "Unknown argument: $key" >&2; exit 1 ;;
   esac
 done
@@ -79,6 +81,11 @@ esac
 case "$DEBUG_MODE" in
   off|sql|steps|all|1|0|on) ;;
   *) echo "debug-mode must be all, sql, steps or off" >&2; exit 1 ;;
+esac
+
+case "$SCREENSHOT_ON_FAIL" in
+  true|false) ;;
+  *) echo "screenshot-on-fail must be true or false" >&2; exit 1 ;;
 esac
 
 case "$WORKERS" in

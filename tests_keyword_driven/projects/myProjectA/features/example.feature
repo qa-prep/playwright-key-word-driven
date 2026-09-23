@@ -1,4 +1,4 @@
-# location: tests_keyword_driven/projects/default/features/example.feature
+# location: tests_keyword_driven/projects/myProjectA/features/example.feature
 
 @featureName.example @featureArea.keywordTest @exampleTests 
 Feature: Example — generic step library walkthrough
