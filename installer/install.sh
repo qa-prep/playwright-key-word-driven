@@ -85,6 +85,46 @@ else
   echo "!! No canonical default-settings.config found in $CANONICAL_DIR — nothing to apply"
 fi
 
+
+# ---------------------------------------------------------------------------
+# 2.6. Lay down config/local.env from canonical, same rule as the settings
+#      file above: only if the user doesn't already have one, never touched
+#      again after that. This holds secrets/machine-specific values (DB
+#      creds, Slack token), so unlike default-settings.config it should
+#      already be gitignored — the user edits their own copy freely and it's
+#      never at risk of being overwritten by a later install run.
+# ---------------------------------------------------------------------------
+if [ -f "$CANONICAL_DIR/local.env" ]; then
+  if [ -f "config/local.env" ]; then
+    echo "-> config/local.env already exists, skipping"
+  else
+    echo "-> Copying framework's config/local.env template into place"
+    mkdir -p config
+    cp "$CANONICAL_DIR/local.env" config/local.env
+    echo "-> Edit config/local.env with your own DB credentials and (optionally) Slack details"
+  fi
+else
+  echo "!! No canonical local.env found in $CANONICAL_DIR — nothing to apply"
+fi
+
+# ---------------------------------------------------------------------------
+# 2.7. Lay down config/slack-users.json from canonical, same rule as the
+#      other config files: only if missing, never touched again. This is
+#      entirely optional — if it's absent, Slack notifications still work,
+#      just without @name -> Slack ID mention resolution.
+# ---------------------------------------------------------------------------
+if [ -f "$CANONICAL_DIR/slack-users.json" ]; then
+  if [ -f "config/slack-users.json" ]; then
+    echo "-> config/slack-users.json already exists, skipping"
+  else
+    echo "-> Copying framework's config/slack-users.json template into place"
+    mkdir -p config
+    cp "$CANONICAL_DIR/slack-users.json" config/slack-users.json
+  fi
+else
+  echo "!! No canonical slack-users.json found in $CANONICAL_DIR — nothing to apply"
+fi
+
 # ---------------------------------------------------------------------------
 # 3. Core dependencies
 # ---------------------------------------------------------------------------
