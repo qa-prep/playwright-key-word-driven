@@ -1,15 +1,14 @@
-// location: /README.md
+# location: /README.md
 
 # Playwright Key-Word Driven
 
-A keyword-driven Playwright + BDD (Gherkin/Cucumber) + Slack test automation framework for E2E, API, and database-backed system testing — built for multi-project reuse.
-
+A keyword-driven Playwright + BDD (Gherkin/Cucumber) test automation framework for E2E, API, and database-backed system testing — built for multi-project reuse.
 
 ## What a test looks like
 
 ```gherkin
 Scenario: Interacting with and asserting against page elements
-  Given I am on "http://localhost/testpage"
+  Given I am on "+var(fixturePage)"
   Then I should see element "css:#heading"
   And I should see viewport text "Test Fixture Page"
 
@@ -19,6 +18,8 @@ Scenario: Interacting with and asserting against page elements
   When I click "css:#checkbox-field"
   Then I should see element "css:#checkbox-field" is "checked"
 ```
+
+No step definitions to write for common interactions like this — `click`, `set field`, `see element`, `see viewport text`, and dozens more ship as a generic step library. You write `.feature` files in plain Gherkin; the framework's stock steps do the rest, and you only write custom step code when a project needs something the generic library doesn't cover.
 
 ## Why this exists
 
@@ -39,8 +40,8 @@ This framework is built around a few opinions:
 
 - Node.js (LTS recommended)
 - npm
-- (Optional) A reachable test database (MySQL, via `mysql2`) if you're using the DB helpers
-- (Optional) A Slack app with a bot token, only if you want Slack notifications (see below) — entirely optional
+- A reachable test database (MySQL, via `mysql2`) if you're using the DB helpers
+- A Slack app with a bot token, only if you want Slack notifications (see below) — entirely optional
 
 ## Install
 
@@ -64,9 +65,6 @@ or
 
 That's it!
 
-
-
-
 The installer will:
 - Run `npm init playwright@latest` if no Playwright project exists yet
 - Apply this framework's `playwright.config.ts` (warns before overwriting if you've made local changes)
@@ -76,7 +74,7 @@ The installer will:
 
 All three files under `config/` are yours from that point on — the installer never overwrites any of them on a later run, and the whole `config/` folder is gitignored, so edit them freely with your own DB credentials, Slack details, and preferred defaults.
 
-Open `config/local.env` and fill in the things you will need (if you are running tests that require database check you can optionaly set that up):
+Open `config/local.env` and fill in your database details if you're using the DB helpers — otherwise the defaults are enough to get started:
 
 ```dotenv
 DB_HOST=localhost
@@ -117,4 +115,35 @@ To set up a Slack app:
 2. **OAuth & Permissions** → add the `chat:write` bot scope → **Install to Workspace**
 3. Copy the **Bot User OAuth Token** (starts `xoxb-`) into `SLACK_BOT_TOKEN`
 4. Invite the bot to your target channel: `/invite @YourBotName`
-5. Copy the channel ID (not
+5. Copy the channel ID (not the `#name`) into `SLACK_CHANNEL`
+
+`SLACK_NOTIFY_MODE` controls when the finish message actually sends (`SLACK_NEVER_IN_DEBUG` always suppresses both messages during a `debug-mode` run, regardless of notify mode). `config/slack-users.json` maps names to Slack user IDs so you can `@`-mention people in `@Name` form — entirely optional; edit or leave it as-is.
+
+## Running tests
+
+```bash
+./run-tests.sh tests-type=feature project=default tags=@smoke
+```
+
+| Param         | Values                          | Default   |
+|---------------|----------------------------------|-----------|
+| `tests-type`  | `spec` \| `feature` \| `all`     | `all`     |
+| `project`     | any folder under `tests_keyword_driven/projects/` | `default` |
+| `tags`        | Gherkin tags, e.g. `@login,@smoke` | (none)  |
+| `env`         | any name matching a `config/<name>.env` file | `local` |
+| `report`      | `none` \| `never` \| `on-failure` \| `always` | `never` (built, not opened) |
+| `debug-mode`  | `off` \| `all`/`on`/`true`/`1` \| a single category e.g. `sql` | `off` |
+
+Reports are written to `playwright-report/<project>/<date>/<time>/`, never overwritten.
+
+## Adding your own project
+
+1. Create `tests_keyword_driven/projects/<yourProject>/features/` and drop `.feature` files in.
+2. If you need custom step behaviour, create `tests_keyword_driven/projects/<yourProject>/steps/<name>.steps.ts` with the **same filename** as the generic file you want to override — it replaces the generic one automatically for your project only.
+3. No changes to `playwright.config.ts` needed — projects are auto-discovered from folder names.
+
+See `CONTRIBUTING.md` for more detail.
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
