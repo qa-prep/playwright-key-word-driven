@@ -8,6 +8,6 @@
     "strict": false,
     "types": ["node"]
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "scripts/notify-slack.mjs"],
   "exclude": ["node_modules", ".features-gen", "playwright-report", "test-results"]
 }

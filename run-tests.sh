@@ -51,6 +51,8 @@ TEST_EXIT_CODE=0
 OPEN_REPORT_DIR=""
 SPEED="${SPEED:-fast}"
 SCREENSHOT_ON_FAIL="${SCREENSHOT_ON_FAIL:-true}"
+SLACK_ENABLED="${SLACK_ENABLED:-false}"
+SLACK_NOTIFY_MODE="${SLACK_NOTIFY_MODE:-on-failure}"
 
 for arg in "$@"; do
   key="${arg%%=*}"
@@ -68,10 +70,22 @@ for arg in "$@"; do
     env) ENV="$value" ;;  # already resolved above; kept here so it's a recognised flag, not "Unknown argument"
     app_url) export APP_URL="$value" ;;
     api_url) export API_URL="$value" ;;
+    slack-enabled) SLACK_ENABLED="$value" ;;
+    slack-notify-mode) SLACK_NOTIFY_MODE="$value" ;;
     screenshot-on-fail) SCREENSHOT_ON_FAIL="$value" ;;
     *) echo "Unknown argument: $key" >&2; exit 1 ;;
   esac
 done
+
+case "$SLACK_ENABLED" in
+  true|false) ;;
+  *) echo "slack must be true or false" >&2; exit 1 ;;
+esac
+
+case "$SLACK_NOTIFY_MODE" in
+  never|on-failure|always) ;;
+  *) echo "slack-mode must be never, on-failure, or always" >&2; exit 1 ;;
+esac
 
 case "$REPORT_MODE" in
   none|never|on-failure|always) ;;
@@ -109,6 +123,8 @@ case "$BROWSERS" in
   *) echo "browsers must be chrome, firefox, safari, mixed, or a comma-separated list of chrome/firefox/safari" >&2; exit 1 ;;
 esac
 
+export SLACK_ENABLED
+export SLACK_NOTIFY_MODE
 export DEBUG_MODE
 export BROWSERS="$BROWSERS_RESOLVED"
 export WORKERS
@@ -206,6 +222,24 @@ case "$REPORT_MODE" in
   always) OPEN_NOW=true ;;
   on-failure) [ "$TEST_EXIT_CODE" -ne 0 ] && OPEN_NOW=true ;;
 esac
+
+RESULTS_FILES=()
+if [ "$TESTS_TYPE" = "spec" ] || [ "$TESTS_TYPE" = "all" ]; then
+  RESULTS_FILES+=("${REPORT_BASE}/spec/results.json")
+fi
+if [ "$TESTS_TYPE" = "feature" ] || [ "$TESTS_TYPE" = "all" ]; then
+  RESULTS_FILES+=("${REPORT_BASE}/feature/results.json")
+fi
+RESULTS_JOINED=$(IFS=,; echo "${RESULTS_FILES[*]}")
+
+if [ "$SLACK_ENABLED" = "true" ]; then
+  node scripts/notify-slack.mjs \
+    --results="$RESULTS_JOINED" \
+    --env="$ENV" \
+    --project="$PROJECT" \
+    --tags="$TAGS_CLEAN" \
+    --browsers="$BROWSERS_RESOLVED" || echo "Slack notification failed, continuing" >&2
+fi
 
 if [ "$OPEN_NOW" = true ] && [ -n "$OPEN_REPORT_DIR" ]; then
   echo ""
