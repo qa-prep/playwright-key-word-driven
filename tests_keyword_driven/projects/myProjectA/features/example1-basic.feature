@@ -1,6 +1,6 @@
 # location: tests_keyword_driven/projects/myProjectA/features/example.feature
 
-@featureName.example @featureArea.keywordTest @exampleTests 
+@featureName.example1-basic @featureArea.keywordTest @exampleTests 
 Feature: Example — generic step library walkthrough
   This runs entirely against a local static HTML fixture.
   No database, no app under test, and no network access required.

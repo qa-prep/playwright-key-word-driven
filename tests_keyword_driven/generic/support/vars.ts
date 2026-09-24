@@ -4,6 +4,7 @@ import { test as base } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 import path from 'path';
 import type { Page } from '@playwright/test';
+import { resolveTokens } from './envTokens';
 
 type Fixtures = { vars: Map<string, string> };
 
@@ -61,5 +62,5 @@ export const test = base.extend<Fixtures>({
 export { expect };
 
 export function resolveVars(input: string, vars: Map<string, string>): string {
-  return input.replace(/\+var\(([^)]+)\)/g, (_, key) => vars.get(key) ?? '');
+  return resolveTokens(input, (key) => vars.get(key) ?? '');
 }

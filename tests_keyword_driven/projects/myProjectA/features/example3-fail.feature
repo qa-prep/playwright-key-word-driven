@@ -1,6 +1,6 @@
 # location: tests_keyword_driven/projects/myProjectA/features/examplfail.feature
 
-@featureName.examplfail @featureArea.fail @exampleFailTests 
+@featureName.example3-fail @featureArea.fail @exampleFailTests 
 Feature: error handling
   Covers asserting and failing steps
 

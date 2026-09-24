@@ -30,9 +30,9 @@ set +a
 
 # --- load the settings file the env file points at (falls back to the
 # canonical defaults if the env file didn't set SETTINGS_FILE) ---
-SETTINGS_FILE="${SETTINGS_FILE:-config/default-settings.config}"
+SETTINGS_FILE="${_SETTINGS_FILE:-config/default-settings.config}"
 if [ ! -f "$SETTINGS_FILE" ]; then
-  echo "SETTINGS_FILE=${SETTINGS_FILE} (from ${ENV_FILE}) not found" >&2
+  echo "_SETTINGS_FILE=${SETTINGS_FILE} (from ${ENV_FILE}) not found" >&2
   exit 1
 fi
 set -a
@@ -69,8 +69,8 @@ for arg in "$@"; do
     workers) WORKERS="$value" ;;
     speed) SPEED="$value" ;;
     env) ENV="$value" ;;  # already resolved above; kept here so it's a recognised flag, not "Unknown argument"
-    app_url) export APP_URL="$value" ;;
-    api_url) export API_URL="$value" ;;
+    app_url) export _APP_URL="$value" ;;
+    api_url) export _API_URL="$value" ;;
     slack-enabled) SLACK_ENABLED="$value" ;;
     slack-notify-mode) SLACK_NOTIFY_MODE="$value" ;;
     slack-never-in-debug) SLACK_NEVER_IN_DEBUG="$value" ;;
@@ -142,13 +142,14 @@ export DEBUG_MODE
 export BROWSERS="$BROWSERS_RESOLVED"
 export WORKERS
 export SPEED
+export ENV
 
 if [ "$DEBUG_MODE" != "off" ]; then
   ORANGE='\033[38;5;208m'
   NC='\033[0m'
   MSG="[debug-mode=${DEBUG_MODE}] forcing a single worker — tests will run serially, not in parallel"
   ENVMSG="[env: $ENV | browser: $BROWSERS_RESOLVED | speed: $SPEED | headed: $HEADED | report: $REPORT_MODE"
-  APPMSG="[app_url: $APP_URL | api_url: $API_URL]"
+  APPMSG="[app_url: ${_APP_URL:-unset} | api_url: ${_API_URL:-unset}]"
   BORDER=$(printf '%*s' "$((${#MSG} + 4))" '' | tr ' ' '*')
   echo -e "${ORANGE}${BORDER}${NC}"
   echo -e "${ORANGE}* ${MSG} *${NC}"

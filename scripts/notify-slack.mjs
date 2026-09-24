@@ -6,7 +6,7 @@
 //   --phase=finish -> fired after the run completes (default)
 // SLACK_ENABLED / SLACK_NOTIFY_MODE / SLACK_NEVER_IN_DEBUG come from
 // config/default-settings.config. SLACK_BOT_TOKEN / SLACK_CHANNEL come
-// from the env file (config/<env>.env). Requires Node 18+ for global fetch.
+// from the env file (config/<env>.env) as _SLACK_BOT_TOKEN / _SLACK_CHANNEL. Requires Node 18+ for global fetch.
 
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
@@ -31,11 +31,11 @@ if (SLACK_NEVER_IN_DEBUG && DEBUG_MODE !== 'off') process.exit(0);
 const SLACK_NOTIFY_MODE = (process.env.SLACK_NOTIFY_MODE ?? 'on-failure').trim().toLowerCase();
 if (SLACK_NOTIFY_MODE === 'never') process.exit(0);
 
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
-const SLACK_CHANNEL = process.env.SLACK_CHANNEL;
+const SLACK_BOT_TOKEN = process.env._SLACK_BOT_TOKEN;
+const SLACK_CHANNEL = process.env._SLACK_CHANNEL;
 
 if (!SLACK_BOT_TOKEN || !SLACK_CHANNEL) {
-  console.error('[slack] SLACK_ENABLED=true but SLACK_BOT_TOKEN / SLACK_CHANNEL are not set, skipping');
+  console.error('[slack] SLACK_ENABLED=true but _SLACK_BOT_TOKEN / _SLACK_CHANNEL are not set, skipping');
   process.exit(0);
 }
 

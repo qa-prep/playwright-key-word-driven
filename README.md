@@ -77,14 +77,14 @@ All three files under `config/` are yours from that point on — the installer n
 Open `config/local.env` and fill in your database details if you're using the DB helpers — otherwise the defaults are enough to get started:
 
 ```dotenv
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=your-db-name
-DB_USER=your-db-user
-DB_PASSWORD=your-db-pass
+_DB_HOST=localhost
+_DB_PORT=3306
+_DB_NAME=your-db-name
+_DB_USER=your-db-user
+_DB_PASSWORD=your-db-pass
 
-APP_URL=http://localhost:5173
-API_URL=http://localhost/api
+_APP_URL=http://localhost:5173
+_API_URL=http://localhost/api
 ```
 
 `env=<name>` on `run-tests.sh` loads `config/<name>.env` (defaults to `local`), so you can keep a separate file per environment (`config/staging.env`, `config/ci.env`, etc.), each pointing at its own database and app URLs — just make sure `SETTINGS_FILE=config/default-settings.config` is set in each one.

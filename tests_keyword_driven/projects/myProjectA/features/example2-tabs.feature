@@ -1,6 +1,6 @@
 # location: tests_keyword_driven/projects/myProjectA/features/examplfail.feature
 
-@featureName.exampletabs @featureArea.tabs @exampleTests 
+@featureName.example2-tabs @featureArea.tabs @exampleTests 
 Feature: Tab handling
   Covers opening, switching between, and closing browser tabs, plus the
   "no newtab" trick for forcing a target="_blank" link to stay in the same tab.

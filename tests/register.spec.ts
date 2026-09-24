@@ -16,7 +16,7 @@ test('user can register', { tag: '@register' }, async ({ page }, testInfo) => {
  
   await deleteUserByEmail(email); // prevent build up in test database (never do db operations in production code)
 
-  await page.goto(`${process.env.APP_URL}/auth?mode=register`);
+  await page.goto(`${process.env._APP_URL}/auth?mode=register`);
   await page.locator('input[type="text"]').fill(username);
   await page.locator('input[type="email"]').fill(email);
   await page.getByRole('textbox', { name: 'Password'}).fill(password);
