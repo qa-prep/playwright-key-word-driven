@@ -32,6 +32,8 @@ const SPEED_MS: Record<string, number> = { fast: 0, medium: 250, slow: 750, vslo
 const SPEED = (process.env.SPEED ?? 'fast').trim().toLowerCase();
 const slowMo = SPEED_MS[SPEED] ?? 0;
 
+
+
 const defaultBdd = defineBddConfig({
   outputDir: '.features-gen/default',
   features: 'tests_keyword_driven/projects/default/features/**/*.feature',
@@ -73,7 +75,8 @@ const TEST_TIMEOUT = IS_DEBUG_RUN ? 120_000 : 30_000;
 // runs, so during debug runs we skip Playwright's own console reporter
 // entirely rather than have its output collide with ours. Full detail is
 // still captured in the HTML report either way.
-const consoleReporters: any[] = IS_DEBUG_RUN ? [] : [['list']];
+const consoleReporters: any[] = IS_DEBUG_RUN ? [['dot']] : [['list']];
+
 
 
 // Our feature/scenario header tracking in stepLogger.ts uses module-level
@@ -94,6 +97,17 @@ function resolveWorkers(): number | undefined {
 }
 const workers = resolveWorkers();
 
+const SLACK_ENABLED = (process.env.SLACK_ENABLED ?? 'false').trim().toLowerCase() === 'true';
+
+const reporters: any[] = [...consoleReporters];
+if (REPORT_OPEN !== 'none') {
+  reporters.push(['html', { outputFolder: REPORT_DIR, open: REPORT_OPEN === 'none' ? 'never' : REPORT_OPEN }]);
+}
+if (SLACK_ENABLED) {
+  reporters.push(['json', { outputFile: `${REPORT_DIR}/results.json` }]);
+}
+
+/*
 const reporters: any[] =
   REPORT_OPEN === 'none'
     ? consoleReporters
@@ -101,6 +115,7 @@ const reporters: any[] =
         ...consoleReporters,
         ['html', { outputFolder: REPORT_DIR, open: REPORT_OPEN === 'none' ? 'never' : REPORT_OPEN }],
       ];
+*/
 
 const specProjects = browserKeys.map((key) => ({
   name: `spec-${key}`,
@@ -122,11 +137,15 @@ const namedFeatureProjects = projectNames.flatMap((name) =>
   })),
 );
 
+const SCREENSHOT_ON_FAIL = (process.env.SCREENSHOT_ON_FAIL ?? 'true').trim().toLowerCase() !== 'false';
+
+
 export default defineConfig({
   timeout: TEST_TIMEOUT,
   workers,
   use: {
     launchOptions: { slowMo },
+    screenshot: SCREENSHOT_ON_FAIL ? 'only-on-failure' : 'off',
   },
   reporter: reporters,
   projects: [

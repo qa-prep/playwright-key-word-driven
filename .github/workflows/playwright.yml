@@ -18,6 +18,13 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # playwright.config.ts is also gitignored (installer/install.sh creates
+      # it locally from this same canonical template) - a fresh checkout has
+      # no config file at all, which is why bddgen fails with "No BDD configs
+      # found" without this step.
+      - name: Set up playwright.config.ts
+        run: cp installer/canonical/playwright.config.ts.bak playwright.config.ts
+
       # config/ is gitignored (it holds real DB/API credentials for whichever
       # backend you point it at), so CI needs its own env - the canonical
       # installer templates are committed and contain only safe placeholders.
