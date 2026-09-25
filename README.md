@@ -4,6 +4,8 @@
 
 A keyword-driven Playwright + BDD (Gherkin/Cucumber) test automation framework for E2E, API, and database-backed system testing — built for multi-project reuse.
 
+Want to run these tests automatically in CI/CD (GitHub Actions)? See [CI-CD.md](./CI-CD.md).
+
 ## What a test looks like
 
 ```gherkin
