@@ -1,27 +1,41 @@
-name: Playwright Tests
+name: Playwright Tests (examples)
+
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+
 jobs:
   test:
-    timeout-minutes: 60
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: npx playwright test
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # config/ is gitignored (it holds real DB/API credentials for whichever
+      # backend you point it at), so CI needs its own env - the canonical
+      # installer templates are committed and contain only safe placeholders.
+      # example1-basic/example2-tabs never touch a DB or API (see their
+      # feature file docblocks: local static HTML fixtures only), so the
+      # placeholder values are never actually used for anything.
+      - name: Set up CI config
+        run: |
+          mkdir -p config
+          sed 's|^_SETTINGS_FILE=.*|_SETTINGS_FILE=config/ci-default-settings.config|' installer/canonical/local.env > config/ci.env
+          cp installer/canonical/default-settings.config config/ci-default-settings.config
+
+      - name: Run keyword-driven example tests
+        run: ./run-tests.sh project=myProjectA tags=@featureName.example1-basic,@featureName.example2-tabs env=ci
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
