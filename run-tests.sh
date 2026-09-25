@@ -207,9 +207,19 @@ run_spec() {
 
 # --- PRE_TEST_N / POST_TEST_N phases (see config/default-settings.config) ---
 # Numbers, not the full var name, e.g. "1" "2" for PRE_TEST_1/PRE_TEST_2.
+# compgen -v only checks that the variable NAME exists, not its value - the
+# canonical settings template declares PRE_TEST_1/PRE_TEST_2/POST_TEST_1/
+# POST_TEST_2 with empty values by default, so without the emptiness check
+# below, every fresh install would "discover" phases that don't actually
+# exist as Playwright projects (playwright.config.ts's own discovery does
+# filter empty values, this has to match it or the two sides disagree).
 discover_phase_numbers() {
-  local prefix="$1"
-  compgen -v "$prefix" 2>/dev/null | grep -E "^${prefix}[0-9]+$" | sed "s/^${prefix}//" | sort -n
+  local prefix="$1" var
+  for var in $(compgen -v "$prefix" 2>/dev/null | grep -E "^${prefix}[0-9]+$"); do
+    if [ -n "${!var:-}" ]; then
+      echo "${var#$prefix}"
+    fi
+  done | sort -n
 }
 
 # Runs one phase's already-generated project. Tag-unfiltered on purpose,
@@ -314,7 +324,7 @@ RESULTS_FILES=()
 for f in "${REPORT_BASE}"/*/results.json; do
   [ -e "$f" ] && RESULTS_FILES+=("$f")
 done
-RESULTS_JOINED=$(IFS=,; echo "${RESULTS_FILES[*]}")
+RESULTS_JOINED=$(IFS=,; echo "${RESULTS_FILES[*]:-}")
 
 RUN_END_EPOCH=$(date +%s)
 RUN_END_HUMAN=$(date "+%Y-%m-%d %H:%M:%S")
