@@ -157,6 +157,106 @@ Either way, the same config-assembly pattern applies: real values as
 repository secrets, assembled into a config file fresh each run, never
 committed.
 
+## Triggering tests from a different private repo
+
+A common shape: your actual product lives in one repo (call it the app repo),
+your tests live in this separate test repo, and you want a push to the app
+repo to trigger a run of the tests. That means the app repo's workflow needs
+to check out the test repo too, and if the test repo is private, the app
+repo's default `GITHUB_TOKEN` can't read it, that token only has access to
+the repo it belongs to.
+
+The fix is a **Personal Access Token (PAT)**: a credential you generate once,
+scoped to read just the one test repo, stored as a secret on the app repo.
+
+**This is the one genuinely manual step in this entire setup.** Everything
+else here, secrets, workflow files, config assembly, can be scripted or done
+by an assistant. Minting a new PAT cannot be, on purpose, GitHub requires it
+go through the browser, logged in as you, with no API path around it. If
+you're working through this with an AI assistant, this is the part you do
+yourself:
+
+1. Go to **[github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta)**
+   (this is the "fine-grained" token page, not the older "classic" one) and
+   click **Generate new token**.
+2. Give it a name that says what it's for, e.g. `dash-sites-tests-checkout`,
+   you'll thank yourself later when you have several of these.
+3. Under **Resource owner**, pick the account/org that owns the test repo.
+4. Under **Repository access**, choose **Only select repositories**, then
+   pick just the one test repo. Not "All repositories", scope it down.
+5. Under **Permissions -> Repository permissions**, find **Contents** and set
+   it to **Read-only**. That's the only permission a checkout needs, nothing
+   else should be granted.
+6. Pick an **expiration**. Avoid "No expiration": read-only + single-repo
+   already limits the damage if this ever leaks, but a token that never
+   expires has no ceiling on *how long* a leak stays dangerous if nobody
+   notices. A year is a reasonable middle ground, long enough to not be
+   annoying, short enough to bound the risk.
+7. Click **Generate token**. GitHub shows you the value **exactly once**,
+   copy it now.
+8. Store it as a secret on the **app repo** (not the test repo, the one whose
+   workflow needs to read the other one):
+   ```bash
+   gh secret set DASH_SITES_TESTS_PAT --repo <you>/<app-repo>
+   ```
+   Run this yourself, in your own terminal. If you paste the raw token value
+   into a chat with an AI assistant to have it run this for you, that value
+   is now sitting in that conversation's history, which defeats a good chunk
+   of the point of scoping the token down carefully in the first place. Let
+   `gh secret set` prompt you for it instead, it reads the value without
+   echoing it anywhere.
+
+Once it's stored, reference it from the app repo's workflow like any other
+secret, passed to the `token:` input of the checkout step for the *other*
+repo (your own repo's checkout, first in the job, doesn't need it, the
+default token already covers that one):
+
+```yaml
+steps:
+  - uses: actions/checkout@v4          # this repo, default token is fine
+
+  - uses: actions/checkout@v4          # the private test repo, needs the PAT
+    with:
+      repository: <you>/<your-tests-repo>
+      token: ${{ secrets.DASH_SITES_TESTS_PAT }}
+      path: dash-sites-tests
+```
+
+Everything after that, installing dependencies, assembling config, running
+`run-tests.sh`, works exactly the same as the single-repo example earlier,
+just run with `working-directory:` (or a `cd`) pointed at the checked-out
+test repo's folder instead of the workflow's own repo root.
+
+## Skipping a run
+
+Every commit triggers the workflow by default, including one that only fixes
+a typo in a comment. GitHub Actions has a built-in escape hatch for this,
+nothing to build: if the commit message contains `[skip ci]` (or `[ci skip]`,
+`[no ci]`, `[skip actions]`, `[actions skip]`, case-insensitive), GitHub never
+even queues a workflow run for that push, not "run and cancel", it genuinely
+never starts, so it costs nothing.
+
+```bash
+git commit -m "fix typo in comment [skip ci]"
+git push
+```
+
+Same convention works on GitLab CI, Azure Pipelines, and most other CI
+systems too.
+
+For something more automatic than remembering to type `[skip ci]` every
+time, a `paths-ignore` filter on the workflow's `on: push:` trigger skips the
+whole workflow whenever a push touches only certain files (e.g. docs), no
+commit message tag needed:
+
+```yaml
+on:
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+```
+
 ## Cost
 
 Public repos get unlimited free GitHub Actions minutes. Private repos get a
