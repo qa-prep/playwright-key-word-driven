@@ -1,25 +1,9 @@
 // location: /playwright.config.ts
 import { defineConfig } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
-import fg from 'fast-glob';
-import path from 'path';
+import fs from 'fs';
 import os from 'os';
 import { stepsForProject } from './tests_keyword_driven/generic/support/buildSteps';
-
-const projectNames = fg.sync('tests_keyword_driven/projects/*', { onlyDirectories: true })
-  .map((dir) => path.basename(dir));
-
-const bddConfigs = Object.fromEntries(
-  projectNames.map((name) => [
-    name,
-    defineBddConfig({
-      outputDir: `.features-gen/${name}`,
-      features: `tests_keyword_driven/projects/${name}/features/**/*.feature`,
-      steps: stepsForProject(name),
-    }),
-  ]),
-);
-
 
 // Speed knob for headed/debug runs: inserts a delay before every Playwright
 // action (click, fill, etc.), purely for human-watchable runs. Doesn't touch
@@ -33,12 +17,6 @@ const SPEED = (process.env.SPEED ?? 'fast').trim().toLowerCase();
 const slowMo = SPEED_MS[SPEED] ?? 0;
 
 
-
-const defaultBdd = defineBddConfig({
-  outputDir: '.features-gen/default',
-  features: 'tests_keyword_driven/projects/default/features/**/*.feature',
-  steps: stepsForProject('default'),
-});
 
 // run-tests.sh resolves "mixed" into the full comma-separated list before
 // exporting BROWSERS, so this config only ever needs to understand a plain
@@ -123,19 +101,84 @@ const specProjects = browserKeys.map((key) => ({
   use: { browserName: BROWSER_DEFS[key] },
 }));
 
-const defaultFeatureProjects = browserKeys.map((key) => ({
-  name: `feature-default-${key}`,
-  testDir: defaultBdd,
+// --- feature (BDD) projects ---
+//
+// Only the requested PROJECT (plus its PRE_TEST_N/POST_TEST_N phases below)
+// gets a defineBddConfig() call and a Playwright project, not every project
+// folder in the repo - building the full matrix on every invocation was
+// wasteful. run-tests.sh exports PROJECT before invoking Playwright/bddgen;
+// a direct `npx playwright test` bypassing the script falls back to
+// "default", matching run-tests.sh's own default. This also folds "default"
+// into the same single code path as any other project, rather than a
+// separate hardcoded case that used to collide with the auto-discovered
+// "default" folder under the old full-matrix build.
+const PROJECT = process.env.PROJECT ?? 'default';
+
+// PRE_TEST_N / POST_TEST_N values (see config/default-settings.config):
+//   no "/"  -> a project name, looked up under tests_keyword_driven/projects/<name>
+//   has "/" -> a literal path from the repo root (leading "/" stripped)
+// This lets one setup step (e.g. an install flow) live in one place and be
+// shared across projects, instead of duplicated into every project that
+// needs it.
+function resolvePhasePath(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.includes('/')) {
+    return trimmed.replace(/^\/+/, '');
+  }
+  const underProjects = `tests_keyword_driven/projects/${trimmed}`;
+  return fs.existsSync(underProjects) ? underProjects : trimmed;
+}
+
+// Discovers PRE_TEST_1, PRE_TEST_2, ... (or POST_TEST_*) from the
+// environment, in numeric order, skipping any that are unset/empty. No
+// fixed limit: config/default-settings.config is sourced with `set -a`, so
+// any PRE_TEST_N/POST_TEST_N a user adds is automatically visible here, no
+// other changes needed anywhere.
+function discoverPhases(prefix: 'PRE_TEST_' | 'POST_TEST_'): { num: number; path: string }[] {
+  return Object.keys(process.env)
+    .map((key) => {
+      const match = key.match(new RegExp(`^${prefix}(\\d+)$`));
+      return match ? { num: Number(match[1]), value: process.env[key] ?? '' } : null;
+    })
+    .filter((entry): entry is { num: number; value: string } => entry !== null && entry.value.trim() !== '')
+    .sort((a, b) => a.num - b.num)
+    .map(({ num, value }) => ({ num, path: resolvePhasePath(value) }));
+}
+
+// Phases always use the main PROJECT's steps (generic + that project's
+// overrides), regardless of where the phase's .feature files physically
+// live, since you're running them as part of that project's suite. Phases
+// run against a single browser only, never once per browser - a setup step
+// like "install the app" only needs to happen once, running it again in a
+// second browser would just hit "already installed" and fail.
+const primaryBrowser = browserKeys[0];
+
+function buildPhaseProjects(kind: 'pre-test' | 'post-test', phases: { num: number; path: string }[]) {
+  return phases.map(({ num, path: featurePath }) => ({
+    name: `${kind}-${num}-${PROJECT}`,
+    testDir: defineBddConfig({
+      outputDir: `.features-gen/${PROJECT}-${kind}-${num}`,
+      features: `${featurePath}/**/*.feature`,
+      steps: stepsForProject(PROJECT),
+    }),
+    use: { browserName: BROWSER_DEFS[primaryBrowser] },
+  }));
+}
+
+const preTestProjects = buildPhaseProjects('pre-test', discoverPhases('PRE_TEST_'));
+const postTestProjects = buildPhaseProjects('post-test', discoverPhases('POST_TEST_'));
+
+const mainBddConfig = defineBddConfig({
+  outputDir: `.features-gen/${PROJECT}`,
+  features: `tests_keyword_driven/projects/${PROJECT}/features/**/*.feature`,
+  steps: stepsForProject(PROJECT),
+});
+
+const mainFeatureProjects = browserKeys.map((key) => ({
+  name: `feature-${PROJECT}-${key}`,
+  testDir: mainBddConfig,
   use: { browserName: BROWSER_DEFS[key] },
 }));
-
-const namedFeatureProjects = projectNames.flatMap((name) =>
-  browserKeys.map((key) => ({
-    name: `feature-${name}-${key}`,
-    testDir: bddConfigs[name],
-    use: { browserName: BROWSER_DEFS[key] },
-  })),
-);
 
 const SCREENSHOT_ON_FAIL = (process.env.SCREENSHOT_ON_FAIL ?? 'true').trim().toLowerCase() !== 'false';
 
@@ -150,7 +193,8 @@ export default defineConfig({
   reporter: reporters,
   projects: [
     ...specProjects,
-    ...defaultFeatureProjects,
-    ...namedFeatureProjects,
+    ...preTestProjects,
+    ...mainFeatureProjects,
+    ...postTestProjects,
   ],
 });

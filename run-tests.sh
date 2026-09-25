@@ -143,6 +143,7 @@ export BROWSERS="$BROWSERS_RESOLVED"
 export WORKERS
 export SPEED
 export ENV
+export PROJECT
 
 if [ "$DEBUG_MODE" != "off" ]; then
   ORANGE='\033[38;5;208m'
@@ -204,24 +205,73 @@ run_spec() {
   npx playwright "${args[@]}" || TEST_EXIT_CODE=$?
 }
 
-run_feature() {
-  mkdir -p "${REPORT_BASE}/feature"
-  export REPORT_DIR="${REPORT_BASE}/feature"
-  OPEN_REPORT_DIR="${REPORT_BASE}/feature"
-  local bddgen_args=()
-  if [ -n "$TAGS_CLEAN" ]; then
-    bddgen_args+=("--tags=$(echo "$TAGS_CLEAN" | sed 's/,/ or /g')")
-  fi
-  npx bddgen "${bddgen_args[@]}"
+# --- PRE_TEST_N / POST_TEST_N phases (see config/default-settings.config) ---
+# Numbers, not the full var name, e.g. "1" "2" for PRE_TEST_1/PRE_TEST_2.
+discover_phase_numbers() {
+  local prefix="$1"
+  compgen -v "$prefix" 2>/dev/null | grep -E "^${prefix}[0-9]+$" | sed "s/^${prefix}//" | sort -n
+}
 
-  local test_args=(test)
-  for b in "${BROWSER_LIST[@]}"; do
-    test_args+=("--project=feature-${PROJECT}-${b}")
-  done
+# Runs one phase's already-generated project. Tag-unfiltered on purpose,
+# a phase runs everything in its folder, it's not part of the tagged main
+# suite selection.
+run_phase() {
+  local kind="$1" num="$2"  # kind: pre-test | post-test
+  mkdir -p "${REPORT_BASE}/${kind}-${num}"
+  export REPORT_DIR="${REPORT_BASE}/${kind}-${num}"
+  local args=(test "--project=${kind}-${num}-${PROJECT}")
   if [ "$HEADED" = "true" ]; then
-    test_args+=("--headed")
+    args+=("--headed")
   fi
-  npx playwright "${test_args[@]}" || TEST_EXIT_CODE=$?
+  npx playwright "${args[@]}"
+}
+
+run_feature() {
+  # Generates specs for every registered project (main + all phases) in one
+  # pass, tag-unfiltered - tags are applied later, only to the main suite's
+  # own `playwright test` invocation (like run_spec() already does via
+  # --grep), so a PRE_TEST/POST_TEST phase is never accidentally skipped
+  # just because its scenarios don't happen to match the main suite's tags.
+  npx bddgen
+
+  local phase_failed=false
+  for num in $(discover_phase_numbers "PRE_TEST_"); do
+    echo ""
+    echo "=== Running PRE_TEST_${num} ==="
+    if ! run_phase "pre-test" "$num"; then
+      echo "PRE_TEST_${num} failed, stopping before the main suite runs." >&2
+      TEST_EXIT_CODE=1
+      phase_failed=true
+      break
+    fi
+  done
+
+  if [ "$phase_failed" = "false" ]; then
+    mkdir -p "${REPORT_BASE}/feature"
+    export REPORT_DIR="${REPORT_BASE}/feature"
+    OPEN_REPORT_DIR="${REPORT_BASE}/feature"
+    local test_args=(test)
+    for b in "${BROWSER_LIST[@]}"; do
+      test_args+=("--project=feature-${PROJECT}-${b}")
+    done
+    if [ -n "$TAGS_CLEAN" ]; then
+      test_args+=("--grep=$(echo "$TAGS_CLEAN" | tr ',' '|')")
+    fi
+    if [ "$HEADED" = "true" ]; then
+      test_args+=("--headed")
+    fi
+    npx playwright "${test_args[@]}" || TEST_EXIT_CODE=$?
+  fi
+
+  # Always run, teardown-style, even if a PRE_TEST or the main suite failed.
+  for num in $(discover_phase_numbers "POST_TEST_"); do
+    echo ""
+    echo "=== Running POST_TEST_${num} ==="
+    if ! run_phase "post-test" "$num"; then
+      echo "POST_TEST_${num} failed." >&2
+      TEST_EXIT_CODE=1
+    fi
+  done
 }
 
 case "$TESTS_TYPE" in
@@ -257,13 +307,13 @@ case "$REPORT_MODE" in
   on-failure) [ "$TEST_EXIT_CODE" -ne 0 ] && OPEN_NOW=true ;;
 esac
 
+# Discovered rather than hardcoded to spec/feature, so PRE_TEST_N/POST_TEST_N
+# phase results (each written to their own report subfolder by run_phase())
+# are automatically included in the combined Slack summary too.
 RESULTS_FILES=()
-if [ "$TESTS_TYPE" = "spec" ] || [ "$TESTS_TYPE" = "all" ]; then
-  RESULTS_FILES+=("${REPORT_BASE}/spec/results.json")
-fi
-if [ "$TESTS_TYPE" = "feature" ] || [ "$TESTS_TYPE" = "all" ]; then
-  RESULTS_FILES+=("${REPORT_BASE}/feature/results.json")
-fi
+for f in "${REPORT_BASE}"/*/results.json; do
+  [ -e "$f" ] && RESULTS_FILES+=("$f")
+done
 RESULTS_JOINED=$(IFS=,; echo "${RESULTS_FILES[*]}")
 
 RUN_END_EPOCH=$(date +%s)
