@@ -2,7 +2,7 @@
 
 import { createBdd } from 'playwright-bdd';
 import { test, resolveVars } from '../support/vars';
-import { deleteUserByEmail } from '../../../db/entities/users';
+import { testAutomationApi } from '../support/testAutomationApi';
 
 const { Given, When } = createBdd(test);
 
@@ -10,10 +10,19 @@ Given('I set variable {string} to {string}', async ({ vars }, name, value) => {
   vars.set(name, resolveVars(value, vars));
 });
 
-// better to use an api endpoint written for cleaning up test data
-// (so other tables can be cleaned up according to devs' intentions)
+// goes through the backend's own tiered cleanup (moderation queue, team
+// ownership, personal tables, etc), not just a direct delete on ds_core_users.
+// for a direct-query example instead of the api, see db/entities/users.ts
+// (deleteUserByEmail/getUserIdByEmail) and tests/db_test.spec.ts.
 Given('I clean up user data for email {string}', async ({ vars }, email) => {
-  await deleteUserByEmail(resolveVars(email, vars));
+  await testAutomationApi.deleteUserByEmail(resolveVars(email, vars));
+});
+
+// bulk sweep: use this once per suite/run (e.g. with your test-run's email
+// prefix) instead of calling the single-email cleanup once per test - that's
+// what keeps the query count flat when many tests run in parallel
+Given('I clean up user data for email contains {string}', async ({ vars }, emailContains) => {
+  await testAutomationApi.deleteUsersByEmailContains(resolveVars(emailContains, vars));
 });
 
 When('I script {string} to variable {string}', async ({ page, vars }, script, varName) => {

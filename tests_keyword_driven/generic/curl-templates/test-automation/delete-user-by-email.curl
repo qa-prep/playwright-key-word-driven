@@ -1,0 +1,7 @@
+# location: tests_keyword_driven/generic/curl-templates/test-automation/delete-user-by-email.curl
+# _API_URL _AUTOMATION_API_USERNAME  _AUTOMATION_API_PASSWORD  will be defined in your env file
+
+curl --url '_API_URL/test-automation/delete-user-by-email' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data-raw '+var(body)'

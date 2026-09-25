@@ -39,7 +39,7 @@ set -a
 source "$SETTINGS_FILE"
 set +a
 
-TESTS_TYPE="${TESTS_TYPE:-all}"
+TESTS_TYPE="${TESTS_TYPE:-feature}"
 TAGS="${TAGS:-}"
 PROJECT="${PROJECT:-default}"
 HEADED="${HEADED:-false}"
