@@ -27,6 +27,24 @@ When('I attempt click {string}', async ({ page, vars }, selector) => {
   await locator.click({ trial: false, force: false }).catch(() => {}); // best-effort, do not fail if unclickable
 });
 
+// For "accept this if it's there" gates (cookie banners, ToS/policy dialogs,
+// etc): clicks every currently-matching element, one at a time, none if
+// there aren't any - not an "attempt" on a single element, since more than
+// one identical dialog can be open at once (e.g. separate ToS + Privacy
+// Policy gates both showing "I accept"). Deliberately not a general
+// conditional-in-Gherkin mechanism, this only ever does the one thing
+// ("accept it if present") regardless of environment, so the scenario stays
+// deterministic - it doesn't branch what the scenario does next.
+When('I accept any {string}', async ({ page, vars }, selector) => {
+  const rawSelector = resolveVars(selector, vars);
+  for (let i = 0; i < 10; i++) {
+    const locator = await resolveLocator(page, rawSelector);
+    const count = await locator.count().catch(() => 0);
+    if (count === 0) break;
+    await locator.first().click().catch(() => {});
+  }
+});
+
 When('I set field {string} to {string}', async ({ page, vars }, selector, value) => {
   const locator = await resolveLocator(page, resolveVars(selector, vars));
   await locator.fill(resolveVars(value, vars));
