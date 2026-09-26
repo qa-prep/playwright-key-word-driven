@@ -42,6 +42,14 @@ When('I set field {string} to {string} noCheck', async ({ page, vars }, selector
   await locator.fill(resolveVars(value, vars)); // Playwright's fill already verifies the value landed; kept for step-text parity
 });
 
+// For a native <select>, not a custom dropdown component - .fill() throws on
+// these, Playwright requires .selectOption() instead. Matches by visible
+// option text (the <option>...</option> label), not its underlying value.
+When('I select {string} from {string}', async ({ page, vars }, optionText, selector) => {
+  const locator = await resolveLocator(page, resolveVars(selector, vars));
+  await locator.selectOption({ label: resolveVars(optionText, vars) });
+});
+
 When('I toggle the {string} element {string} attribute {string} to contain {string}', async (
   { page, vars },
   nth,
