@@ -42,18 +42,18 @@ set +a
 TESTS_TYPE="${TESTS_TYPE:-feature}"
 TAGS="${TAGS:-}"
 PROJECT="${PROJECT:-default}"
-HEADED="${HEADED:-false}"
-REPORT_MODE="${REPORT_MODE:-never}"
-DEBUG_MODE="${DEBUG_MODE:-off}"
-BROWSERS="${BROWSERS:-chrome}"
-WORKERS="${WORKERS:-default}"
+_HEADED="${_HEADED:-false}"
+_REPORT_MODE="${_REPORT_MODE:-never}"
+_DEBUG_MODE="${_DEBUG_MODE:-off}"
+_BROWSERS="${_BROWSERS:-chrome}"
+_WORKERS="${_WORKERS:-default}"
 TEST_EXIT_CODE=0
 OPEN_REPORT_DIR=""
-SPEED="${SPEED:-fast}"
-SCREENSHOT_ON_FAIL="${SCREENSHOT_ON_FAIL:-true}"
-SLACK_ENABLED="${SLACK_ENABLED:-false}"
-SLACK_NOTIFY_MODE="${SLACK_NOTIFY_MODE:-on-failure}"
-SLACK_NEVER_IN_DEBUG="${SLACK_NEVER_IN_DEBUG:-true}"
+_SPEED="${_SPEED:-fast}"
+_SCREENSHOT_ON_FAIL="${_SCREENSHOT_ON_FAIL:-true}"
+_SLACK_ENABLED="${_SLACK_ENABLED:-false}"
+_SLACK_NOTIFY_MODE="${_SLACK_NOTIFY_MODE:-on-failure}"
+_SLACK_NEVER_IN_DEBUG="${_SLACK_NEVER_IN_DEBUG:-true}"
 
 for arg in "$@"; do
   key="${arg%%=*}"
@@ -62,19 +62,19 @@ for arg in "$@"; do
     tests-type) TESTS_TYPE="$value" ;;
     tags) TAGS="$value" ;;
     project) PROJECT="$value" ;;
-    report) REPORT_MODE="$value" ;;
-    debug-mode) DEBUG_MODE="$value" ;;
-    headed) HEADED="$value" ;;
-    browsers) BROWSERS="$value" ;;
-    workers) WORKERS="$value" ;;
-    speed) SPEED="$value" ;;
+    report) _REPORT_MODE="$value" ;;
+    debug-mode) _DEBUG_MODE="$value" ;;
+    headed) _HEADED="$value" ;;
+    browsers) _BROWSERS="$value" ;;
+    workers) _WORKERS="$value" ;;
+    speed) _SPEED="$value" ;;
     env) ENV="$value" ;;  # already resolved above; kept here so it's a recognised flag, not "Unknown argument"
     app_url) export _APP_URL="$value" ;;
     api_url) export _API_URL="$value" ;;
-    slack-enabled) SLACK_ENABLED="$value" ;;
-    slack-notify-mode) SLACK_NOTIFY_MODE="$value" ;;
-    slack-never-in-debug) SLACK_NEVER_IN_DEBUG="$value" ;;
-    screenshot-on-fail) SCREENSHOT_ON_FAIL="$value" ;;
+    slack-enabled) _SLACK_ENABLED="$value" ;;
+    slack-notify-mode) _SLACK_NOTIFY_MODE="$value" ;;
+    slack-never-in-debug) _SLACK_NEVER_IN_DEBUG="$value" ;;
+    screenshot-on-fail) _SCREENSHOT_ON_FAIL="$value" ;;
     # PRE_TEST_N/POST_TEST_N (see config/default-settings.config) are open-ended,
     # not a fixed list, so this matches the shape rather than a specific name.
     # Exported directly (not staged into a named var like the others above)
@@ -87,48 +87,48 @@ for arg in "$@"; do
   esac
 done
 
-case "$SLACK_ENABLED" in
+case "$_SLACK_ENABLED" in
   true|false) ;;
   *) echo "slack must be true or false" >&2; exit 1 ;;
 esac
 
-case "$SLACK_NOTIFY_MODE" in
+case "$_SLACK_NOTIFY_MODE" in
   never|on-failure|always) ;;
   *) echo "slack-mode must be never, on-failure, or always" >&2; exit 1 ;;
 esac
 
-case "$REPORT_MODE" in
+case "$_REPORT_MODE" in
   none|never|on-failure|always) ;;
   *) echo "report must be none (dont even build), never (build but don't open), on-failure (build and open only if there are failures), or always (build and open regardless of pass/fail)" >&2; exit 1 ;;
 esac
 
-case "$DEBUG_MODE" in
+case "$_DEBUG_MODE" in
   off|sql|steps|all|1|0|on) ;;
   *) echo "debug-mode must be all, sql, steps or off" >&2; exit 1 ;;
 esac
 
-case "$SCREENSHOT_ON_FAIL" in
+case "$_SCREENSHOT_ON_FAIL" in
   true|false) ;;
   *) echo "screenshot-on-fail must be true or false" >&2; exit 1 ;;
 esac
 
-case "$WORKERS" in
+case "$_WORKERS" in
   default|max) ;;
   ''|*[!0-9]*) echo "workers must be 'default', 'max', or a positive whole number" >&2; exit 1 ;;
   *) ;;
 esac
 
-case "$SLACK_NEVER_IN_DEBUG" in
+case "$_SLACK_NEVER_IN_DEBUG" in
   true|false) ;;
   *) echo "slack-never-in-debug must be true or false" >&2; exit 1 ;;
 esac
 
 SLACK_SUPPRESSED_BY_DEBUG=false
-if [ "$SLACK_NEVER_IN_DEBUG" = "true" ] && [ "$DEBUG_MODE" != "off" ]; then
+if [ "$_SLACK_NEVER_IN_DEBUG" = "true" ] && [ "$_DEBUG_MODE" != "off" ]; then
   SLACK_SUPPRESSED_BY_DEBUG=true
 fi
 
-case "$SPEED" in
+case "$_SPEED" in
   fast|medium|slow|vslow) ;;
   *) echo "speed must be fast, medium, slow, or vslow" >&2; exit 1 ;;
 esac
@@ -136,10 +136,10 @@ esac
 # Resolve "mixed" to the actual browser list here, rather than pushing that
 # keyword down into playwright.config.ts, so the config only ever has to
 # understand a plain comma-separated list.
-case "$BROWSERS" in
+case "$_BROWSERS" in
   mixed) BROWSERS_RESOLVED="chrome,firefox,safari" ;;
-  chrome|firefox|safari) BROWSERS_RESOLVED="$BROWSERS" ;;
-  chrome,firefox|chrome,safari|firefox,safari|chrome,firefox,safari) BROWSERS_RESOLVED="$BROWSERS" ;;
+  chrome|firefox|safari) BROWSERS_RESOLVED="$_BROWSERS" ;;
+  chrome,firefox|chrome,safari|firefox,safari|chrome,firefox,safari) BROWSERS_RESOLVED="$_BROWSERS" ;;
   *) echo "browsers must be chrome, firefox, safari, mixed, or a comma-separated list of chrome/firefox/safari" >&2; exit 1 ;;
 esac
 
@@ -157,21 +157,24 @@ if [ "$TESTS_TYPE" = "feature" ] || [ "$TESTS_TYPE" = "all" ]; then
   fi
 fi
 
-export SLACK_ENABLED
-export SLACK_NOTIFY_MODE
-export SLACK_NEVER_IN_DEBUG
-export DEBUG_MODE
-export BROWSERS="$BROWSERS_RESOLVED"
-export WORKERS
-export SPEED
+export _SLACK_ENABLED
+export _SLACK_NOTIFY_MODE
+export _SLACK_NEVER_IN_DEBUG
+export _DEBUG_MODE
+export _BROWSERS="$BROWSERS_RESOLVED"
+export _WORKERS
+export _SPEED
+export _HEADED
+export _REPORT_MODE
+export _SCREENSHOT_ON_FAIL
 export ENV
 export PROJECT
 
-if [ "$DEBUG_MODE" != "off" ]; then
+if [ "$_DEBUG_MODE" != "off" ]; then
   ORANGE='\033[38;5;208m'
   NC='\033[0m'
-  MSG="[debug-mode=${DEBUG_MODE}] forcing a single worker — tests will run serially, not in parallel"
-  ENVMSG="[env: $ENV | browser: $BROWSERS_RESOLVED | speed: $SPEED | headed: $HEADED | report: $REPORT_MODE"
+  MSG="[debug-mode=${_DEBUG_MODE}] forcing a single worker — tests will run serially, not in parallel"
+  ENVMSG="[env: $ENV | browser: $BROWSERS_RESOLVED | speed: $_SPEED | headed: $_HEADED | report: $_REPORT_MODE"
   APPMSG="[app_url: ${_APP_URL:-unset} | api_url: ${_API_URL:-unset}]"
   BORDER=$(printf '%*s' "$((${#MSG} + 4))" '' | tr ' ' '*')
   echo -e "${ORANGE}${BORDER}${NC}"
@@ -190,7 +193,7 @@ REPORT_BASE="playwright-report/${PROJECT}/${REPORT_DATE}/${REPORT_TIME}"
 
 IFS=',' read -ra BROWSER_LIST <<< "$BROWSERS_RESOLVED"
 
-RUN_COMMAND="./run-tests.sh tests-type=${TESTS_TYPE} project=${PROJECT} env=${ENV} browsers=${BROWSERS_RESOLVED} headed=${HEADED} debug-mode=${DEBUG_MODE} speed=${SPEED} report=${REPORT_MODE} workers=${WORKERS}"
+RUN_COMMAND="./run-tests.sh tests-type=${TESTS_TYPE} project=${PROJECT} env=${ENV} browsers=${BROWSERS_RESOLVED} headed=${_HEADED} debug-mode=${_DEBUG_MODE} speed=${_SPEED} report=${_REPORT_MODE} workers=${_WORKERS}"
 if [ -n "$TAGS_CLEAN" ]; then
   RUN_COMMAND="${RUN_COMMAND} tags=${TAGS_CLEAN}"
 fi
@@ -199,7 +202,7 @@ fi
 RUN_START_EPOCH=$(date +%s)
 RUN_START_HUMAN=$(date "+%Y-%m-%d %H:%M:%S")
 
-if [ "$SLACK_ENABLED" = "true" ] && [ "$SLACK_SUPPRESSED_BY_DEBUG" = "false" ]; then
+if [ "$_SLACK_ENABLED" = "true" ] && [ "$SLACK_SUPPRESSED_BY_DEBUG" = "false" ]; then
   node scripts/notify-slack.mjs \
     --phase=start \
     --env="$ENV" \
@@ -221,7 +224,7 @@ run_spec() {
   if [ -n "$TAGS_CLEAN" ]; then
     args+=("--grep=$(echo "$TAGS_CLEAN" | tr ',' '|')")
   fi
-  if [ "$HEADED" = "true" ]; then
+  if [ "$_HEADED" = "true" ]; then
     args+=("--headed")
   fi
   npx playwright "${args[@]}" || TEST_EXIT_CODE=$?
@@ -252,7 +255,7 @@ run_phase() {
   mkdir -p "${REPORT_BASE}/${kind}-${num}"
   export REPORT_DIR="${REPORT_BASE}/${kind}-${num}"
   local args=(test "--project=${kind}-${num}-${PROJECT}")
-  if [ "$HEADED" = "true" ]; then
+  if [ "$_HEADED" = "true" ]; then
     args+=("--headed")
   fi
   npx playwright "${args[@]}"
@@ -289,7 +292,7 @@ run_feature() {
     if [ -n "$TAGS_CLEAN" ]; then
       test_args+=("--grep=$(echo "$TAGS_CLEAN" | tr ',' '|')")
     fi
-    if [ "$HEADED" = "true" ]; then
+    if [ "$_HEADED" = "true" ]; then
       test_args+=("--headed")
     fi
     npx playwright "${test_args[@]}" || TEST_EXIT_CODE=$?
@@ -315,11 +318,11 @@ esac
 
 # --- everything below now always runs, pass or fail ---
 
-if [ "$REPORT_MODE" != "none" ]; then
+if [ "$_REPORT_MODE" != "none" ]; then
   echo "Report(s) written under: ${REPORT_BASE}"
 fi
 
-if [ "$DEBUG_MODE" != "all" ] || [ "$HEADED" != "true" ]; then
+if [ "$_DEBUG_MODE" != "all" ] || [ "$_HEADED" != "true" ]; then
   RERUN_CMD="./run-tests.sh tests-type=${TESTS_TYPE} project=${PROJECT}"
   if [ -n "$TAGS_CLEAN" ]; then
     RERUN_CMD="${RERUN_CMD} tags=${TAGS_CLEAN}"
@@ -334,7 +337,7 @@ if [ "$DEBUG_MODE" != "all" ] || [ "$HEADED" != "true" ]; then
 fi
 
 OPEN_NOW=false
-case "$REPORT_MODE" in
+case "$_REPORT_MODE" in
   always) OPEN_NOW=true ;;
   on-failure) [ "$TEST_EXIT_CODE" -ne 0 ] && OPEN_NOW=true ;;
 esac
@@ -352,7 +355,7 @@ RUN_END_EPOCH=$(date +%s)
 RUN_END_HUMAN=$(date "+%Y-%m-%d %H:%M:%S")
 DURATION_SECONDS=$((RUN_END_EPOCH - RUN_START_EPOCH))
 
-if [ "$SLACK_ENABLED" = "true" ] && [ "$SLACK_SUPPRESSED_BY_DEBUG" = "false" ]; then
+if [ "$_SLACK_ENABLED" = "true" ] && [ "$SLACK_SUPPRESSED_BY_DEBUG" = "false" ]; then
   node scripts/notify-slack.mjs \
     --phase=finish \
     --results="$RESULTS_JOINED" \

@@ -1,13 +1,13 @@
 // location: tests_keyword_driven/generic/support/debug.ts
 
-// DEBUG_MODE is a single string value:
+// _DEBUG_MODE is a single string value:
 //   "true" | "on" | "1" | "all"  -> everything on
 //   "sql"                        -> only "sql" category
 //   "steps"                      -> only "steps" category
 //   "" | "0" | "false" | "off"   -> everything off
 //   (unset)                      -> everything off
 
-const raw = (process.env.DEBUG_MODE ?? '').trim().toLowerCase();
+const raw = (process.env._DEBUG_MODE ?? '').trim().toLowerCase();
 
 const ON_ALL = new Set(['true', 'on', '1', 'all']);
 const OFF = new Set(['', '0', 'false', 'off']);

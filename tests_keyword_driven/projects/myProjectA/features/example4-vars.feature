@@ -4,7 +4,7 @@
 Feature: error handling
   Covers asserting and failing steps
 
-  @scenarionName.example.tokens
+  @scenarionName.example.tokensA
   Scenario: Using +var() and _ENV tokens in steps
     Given I set variable "who" to "mike"
     And I set variable "greeting" to "hello +var(who)"
@@ -18,3 +18,9 @@ Feature: error handling
 
     Given I set variable "both" to "+var(who) logs in at _API_URL/login"
     Then I should see variable "both" contains "mike logs in at http"
+
+  @scenarionName.example.tokensB
+  Scenario: Using _TOKENS deinfeind in config and env file
+
+    When I spit "_AUTOMATION_API_USERNAME1"
+    And I spit "_APP_URL"

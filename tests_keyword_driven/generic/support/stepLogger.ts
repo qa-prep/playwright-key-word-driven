@@ -25,7 +25,7 @@ function colorForStep(text: string): string {
 // process (see lastFeatureTitle below). With more than one worker, output
 // from different workers interleaves and the grouping breaks even though
 // each worker's own logic is correct, so this checks the *actual* worker
-// count at runtime rather than trusting DEBUG_MODE alone, in case someone
+// count at runtime rather than trusting _DEBUG_MODE alone, in case someone
 // overrides --workers on the CLI.
 function shouldLog(): boolean {
   if (!isDebug('steps')) return false;

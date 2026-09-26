@@ -13,13 +13,13 @@ import { stepsForProject } from './tests_keyword_driven/generic/support/buildSte
 //   slow              -> 750ms
 //   vslow             -> 1500ms
 const SPEED_MS: Record<string, number> = { fast: 0, medium: 250, slow: 750, vslow: 1500 };
-const SPEED = (process.env.SPEED ?? 'fast').trim().toLowerCase();
+const SPEED = (process.env._SPEED ?? 'fast').trim().toLowerCase();
 const slowMo = SPEED_MS[SPEED] ?? 0;
 
 
 
 // run-tests.sh resolves "mixed" into the full comma-separated list before
-// exporting BROWSERS, so this config only ever needs to understand a plain
+// exporting _BROWSERS, so this config only ever needs to understand a plain
 // list of browser keys. Direct `npx playwright test` invocations (bypassing
 // the script) fall back to chrome alone.
 const BROWSER_DEFS = {
@@ -31,7 +31,7 @@ type BrowserKey = keyof typeof BROWSER_DEFS;
 const ALL_BROWSER_KEYS = Object.keys(BROWSER_DEFS) as BrowserKey[];
 
 function resolveBrowserKeys(): BrowserKey[] {
-  const raw = (process.env.BROWSERS ?? 'chrome').trim().toLowerCase();
+  const raw = (process.env._BROWSERS ?? 'chrome').trim().toLowerCase();
   const requested = raw.split(',').map((s) => s.trim()).filter(Boolean);
   const valid = requested.filter((k): k is BrowserKey => (ALL_BROWSER_KEYS as string[]).includes(k));
   return valid.length > 0 ? valid : ['chrome'];
@@ -44,7 +44,7 @@ const REPORT_OPEN = process.env.REPORT_OPEN ?? 'never';
 // debug-mode runs add explicit "I wait" steps and step-through logging, which
 // can add up past the default 30s per-test timeout on their own. Give debug
 // runs more headroom.
-const DEBUG_MODE = process.env.DEBUG_MODE ?? 'off';
+const DEBUG_MODE = process.env._DEBUG_MODE ?? 'off';
 const IS_DEBUG_RUN = DEBUG_MODE !== 'off';
 const TEST_TIMEOUT = IS_DEBUG_RUN ? 120_000 : 30_000;
 
@@ -59,15 +59,15 @@ const consoleReporters: any[] = IS_DEBUG_RUN ? [['dot']] : [['list']];
 
 // Our feature/scenario header tracking in stepLogger.ts uses module-level
 // state that assumes tests run one at a time in a single process, so debug
-// runs are always forced to a single worker regardless of what WORKERS is
-// set to. Outside of debug runs, WORKERS controls concurrency:
+// runs are always forced to a single worker regardless of what _WORKERS is
+// set to. Outside of debug runs, _WORKERS controls concurrency:
 //   "default" -> leave it to Playwright's own default (~half your cores
 //                locally, 1 under CI detection)
 //   "max"     -> use every logical CPU core reported by the OS
 //   a number  -> that exact worker count
 function resolveWorkers(): number | undefined {
   if (IS_DEBUG_RUN) return 1;
-  const raw = (process.env.WORKERS ?? 'default').trim().toLowerCase();
+  const raw = (process.env._WORKERS ?? 'default').trim().toLowerCase();
   if (raw === 'default' || raw === '') return undefined;
   if (raw === 'max') return os.cpus().length;
   const parsed = Number(raw);
@@ -75,7 +75,7 @@ function resolveWorkers(): number | undefined {
 }
 const workers = resolveWorkers();
 
-const SLACK_ENABLED = (process.env.SLACK_ENABLED ?? 'false').trim().toLowerCase() === 'true';
+const SLACK_ENABLED = (process.env._SLACK_ENABLED ?? 'false').trim().toLowerCase() === 'true';
 
 const reporters: any[] = [...consoleReporters];
 if (REPORT_OPEN !== 'none') {
@@ -193,7 +193,7 @@ const mainFeatureProjects = browserKeys.map((key) => ({
   use: { browserName: BROWSER_DEFS[key] },
 }));
 
-const SCREENSHOT_ON_FAIL = (process.env.SCREENSHOT_ON_FAIL ?? 'true').trim().toLowerCase() !== 'false';
+const SCREENSHOT_ON_FAIL = (process.env._SCREENSHOT_ON_FAIL ?? 'true').trim().toLowerCase() !== 'false';
 
 
 export default defineConfig({

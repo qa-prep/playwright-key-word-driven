@@ -4,9 +4,9 @@
 // Posts run notifications to Slack. Called from run-tests.sh:
 //   --phase=start  -> fired immediately when a run begins
 //   --phase=finish -> fired after the run completes (default)
-// SLACK_ENABLED / SLACK_NOTIFY_MODE / SLACK_NEVER_IN_DEBUG come from
-// config/default-settings.config. SLACK_BOT_TOKEN / SLACK_CHANNEL come
-// from the env file (config/<env>.env) as _SLACK_BOT_TOKEN / _SLACK_CHANNEL. Requires Node 18+ for global fetch.
+// _SLACK_ENABLED / _SLACK_NOTIFY_MODE / _SLACK_NEVER_IN_DEBUG come from
+// config/default-settings.config. _SLACK_BOT_TOKEN / _SLACK_CHANNEL come
+// from the env file (config/<env>.env). Requires Node 18+ for global fetch.
 
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
@@ -18,24 +18,24 @@ const args = Object.fromEntries(
   })
 );
 
-const SLACK_ENABLED = (process.env.SLACK_ENABLED ?? 'false').trim().toLowerCase() === 'true';
+const SLACK_ENABLED = (process.env._SLACK_ENABLED ?? 'false').trim().toLowerCase() === 'true';
 if (!SLACK_ENABLED) process.exit(0);
 
 // Belt-and-braces: run-tests.sh already skips calling this script when
 // SLACK_SUPPRESSED_BY_DEBUG is true, but guard here too in case this is
 // ever invoked another way.
-const SLACK_NEVER_IN_DEBUG = (process.env.SLACK_NEVER_IN_DEBUG ?? 'true').trim().toLowerCase() === 'true';
-const DEBUG_MODE = (process.env.DEBUG_MODE ?? 'off').trim().toLowerCase();
+const SLACK_NEVER_IN_DEBUG = (process.env._SLACK_NEVER_IN_DEBUG ?? 'true').trim().toLowerCase() === 'true';
+const DEBUG_MODE = (process.env._DEBUG_MODE ?? 'off').trim().toLowerCase();
 if (SLACK_NEVER_IN_DEBUG && DEBUG_MODE !== 'off') process.exit(0);
 
-const SLACK_NOTIFY_MODE = (process.env.SLACK_NOTIFY_MODE ?? 'on-failure').trim().toLowerCase();
+const SLACK_NOTIFY_MODE = (process.env._SLACK_NOTIFY_MODE ?? 'on-failure').trim().toLowerCase();
 if (SLACK_NOTIFY_MODE === 'never') process.exit(0);
 
 const SLACK_BOT_TOKEN = process.env._SLACK_BOT_TOKEN;
 const SLACK_CHANNEL = process.env._SLACK_CHANNEL;
 
 if (!SLACK_BOT_TOKEN || !SLACK_CHANNEL) {
-  console.error('[slack] SLACK_ENABLED=true but _SLACK_BOT_TOKEN / _SLACK_CHANNEL are not set, skipping');
+  console.error('[slack] _SLACK_ENABLED=true but _SLACK_BOT_TOKEN / _SLACK_CHANNEL are not set, skipping');
   process.exit(0);
 }
 
