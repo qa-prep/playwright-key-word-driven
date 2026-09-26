@@ -165,12 +165,25 @@ function buildPhaseProjects(kind: 'pre-test' | 'post-test', phases: { num: numbe
   }));
 }
 
-const preTestProjects = buildPhaseProjects('pre-test', discoverPhases('PRE_TEST_'));
-const postTestProjects = buildPhaseProjects('post-test', discoverPhases('POST_TEST_'));
+const preTestPhases = discoverPhases('PRE_TEST_');
+const postTestPhases = discoverPhases('POST_TEST_');
+const preTestProjects = buildPhaseProjects('pre-test', preTestPhases);
+const postTestProjects = buildPhaseProjects('post-test', postTestPhases);
 
+// Any .feature file anywhere under the project folder is fair game for the
+// main suite, not just ones under a features/ subfolder - that's a nicety,
+// never a requirement Playwright itself imposes. The one thing that has to
+// stay carved out: whichever folders are configured as PRE_TEST_N/
+// POST_TEST_N phases above, so a tagged main-suite run never accidentally
+// re-runs a phase (e.g. re-submitting the install form) as one of its own
+// scenarios - each phase's own project already covers it exactly once.
+const activePhasePaths = [...preTestPhases, ...postTestPhases].map((p) => p.path);
 const mainBddConfig = defineBddConfig({
   outputDir: `.features-gen/${PROJECT}`,
-  features: `tests_keyword_driven/projects/${PROJECT}/features/**/*.feature`,
+  features: [
+    `tests_keyword_driven/projects/${PROJECT}/**/*.feature`,
+    ...activePhasePaths.map((p) => `!${p}/**/*.feature`),
+  ],
   steps: stepsForProject(PROJECT),
 });
 

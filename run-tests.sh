@@ -75,6 +75,14 @@ for arg in "$@"; do
     slack-notify-mode) SLACK_NOTIFY_MODE="$value" ;;
     slack-never-in-debug) SLACK_NEVER_IN_DEBUG="$value" ;;
     screenshot-on-fail) SCREENSHOT_ON_FAIL="$value" ;;
+    # PRE_TEST_N/POST_TEST_N (see config/default-settings.config) are open-ended,
+    # not a fixed list, so this matches the shape rather than a specific name.
+    # Exported directly (not staged into a named var like the others above)
+    # since there's no single variable to stage them into - explicit export
+    # here also means this reliably wins over the settings file for THIS run,
+    # unlike a bare shell-env-var prefix, which the settings file's own plain
+    # assignment (sourced further up, before this loop runs) would clobber.
+    PRE_TEST_[0-9]*|POST_TEST_[0-9]*) export "$key"="$value" ;;
     *) echo "Unknown argument: $key" >&2; exit 1 ;;
   esac
 done
