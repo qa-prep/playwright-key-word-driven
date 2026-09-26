@@ -135,6 +135,20 @@ case "$BROWSERS" in
   *) echo "browsers must be chrome, firefox, safari, mixed, or a comma-separated list of chrome/firefox/safari" >&2; exit 1 ;;
 esac
 
+# Fail fast with a clear reason, rather than letting Playwright's generic
+# "No tests found" be the only clue once bddgen/playwright have already
+# started up - that error alone doesn't say WHY, and "wrong project name"
+# vs "folder exists but has no features yet" are both easy mistakes to make.
+if [ "$TESTS_TYPE" = "feature" ] || [ "$TESTS_TYPE" = "all" ]; then
+  if [ ! -d "tests_keyword_driven/projects/${PROJECT}" ]; then
+    echo "Cannot find the project folder tests_keyword_driven/projects/${PROJECT}" >&2
+    echo "Are you using the correct project name? And if this is a new project, make sure" >&2
+    echo "you've created that folder with a features/ subfolder containing at least one" >&2
+    echo ".feature file." >&2
+    exit 1
+  fi
+fi
+
 export SLACK_ENABLED
 export SLACK_NOTIFY_MODE
 export SLACK_NEVER_IN_DEBUG
