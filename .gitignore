@@ -7,6 +7,11 @@ node_modules/
 /playwright/.auth/
 /playwright/node_modules/
 /config/*
+# ci.config is the one exception: no credentials belong in it, ever - just
+# deterministic, non-secret CI values (fixed URLs/ports for a throwaway CI
+# stack, behavioral settings like BROWSERS/SLACK_ENABLED). Real credentials
+# still only ever live in config/<env>.env (gitignored) or CI secrets.
+!/config/ci.config
 .features-gen/
 .DS_Store
 /playwright.config.ts

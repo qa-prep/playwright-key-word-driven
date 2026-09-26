@@ -1,5 +1,5 @@
 # location: tests_keyword_driven/generic/curl-templates/test-automation/create.curl
-# _API_URL _AUTOMATION_API_USERNAME  _AUTOMATION_API_PASSWORD  will be defined in your env file
+# _API_URL _AUTOMATION_API_USERNAME1  _AUTOMATION_API_PASSWORD1  will be defined in your env file
 
 curl --url '_API_URL/test-automation/index' \
   -H 'Content-Type: application/json' \
