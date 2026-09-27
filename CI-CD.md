@@ -39,15 +39,26 @@ belong in your own repo, built by cloning this one as a starting point.
    way to prove the whole pipeline (repo, secrets, workflow) actually works
    before adding anything project-specific.
 
-5. **Add a GitHub Actions workflow** at `.github/workflows/tests.yml`. See the
-   full example below.
+5. **Add a GitHub Actions workflow** at `.github/workflows/tests.yml`, on
+   **the repo whose push should trigger a run** - call this the *trigger
+   repo* from here on. For the simple case below, that's this same test
+   repo. If you're instead triggering from a separate app repo whose push
+   should run tests that live over here (see "Triggering tests from a
+   different private repo" further down), the trigger repo is that *other*
+   repo instead - the workflow file, and everything in step 6, belongs
+   there, not on the test repo itself. Worth being precise about this
+   distinction from the start: "the test repo" (where tests live) and "the
+   trigger repo" (whose Actions actually run) are easy to conflate, but
+   they can be, and often are, two different repos. See the full example
+   workflow below.
 
-6. **Add any real credentials the workflow needs as repository secrets**, at
-   `https://github.com/<you>/<your-tests-repo>/settings/secrets/actions`.
+6. **Add any real credentials the workflow needs as repository secrets**, on
+   the *trigger repo*: `https://github.com/<you>/<trigger-repo>/settings/secrets/actions`.
    Never put real credentials in a committed file.
 
-7. **Push.** The workflow fires on the `on: push:` trigger, pass/fail shows up
-   as a check on GitHub, and Slack gets notified if you wired it up.
+7. **Push to the trigger repo.** The workflow fires on the `on: push:`
+   trigger, pass/fail shows up as a check on GitHub, and Slack gets
+   notified if you wired it up.
 
 ## Secrets vs config files
 
@@ -95,7 +106,7 @@ after the first install) as somewhere to actually build this JSON - edit it
 with your real values, then feed the file straight in:
 
 ```bash
-gh secret set CI_SECRETS_JSON --repo <you>/<your-repo-that-will-trigger-tests> < config/ci-secrets.json
+gh secret set CI_SECRETS_JSON --repo <you>/<trigger-repo> < config/ci-secrets.json
 ```
 
 Run this yourself, in your own terminal - same reasoning as the PAT further
@@ -221,10 +232,12 @@ secret, assembled into `config/ci.env` fresh each run, never committed.
 
 ## Triggering tests from a different private repo
 
-A common shape: your actual product lives in one repo (call it the app repo),
-your tests live in this separate test repo, and you want a push to the app
-repo to trigger a run of the tests. That means the app repo's workflow needs
-to check out the test repo too, and if the test repo is private, the app
+A common shape: your actual product lives in one repo (call it the app repo
+- this is the *trigger repo* from the Steps section above, just with a more
+concrete name now that there's a real app on the other end of it), your
+tests live in this separate test repo, and you want a push to the app repo
+to trigger a run of the tests. That means the app repo's workflow needs to
+check out the test repo too, and if the test repo is private, the app
 repo's default `GITHUB_TOKEN` can't read it, that token only has access to
 the repo it belongs to.
 
