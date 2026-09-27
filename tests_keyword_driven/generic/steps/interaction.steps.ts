@@ -39,6 +39,16 @@ When('I accept any {string}', async ({ page, vars }, selector) => {
   const rawSelector = resolveVars(selector, vars);
   for (let i = 0; i < 10; i++) {
     const locator = await resolveLocator(page, rawSelector);
+    // Only the first pass waits: a dialog like a ToS/Privacy gate can render
+    // asynchronously just after navigation, slightly after the rest of the
+    // page is already interactive. Without this, a count() taken too early
+    // sees zero matches and exits immediately - the dialog then appears
+    // afterwards and silently blocks everything underneath it for the rest
+    // of the scenario. Once we've seen at least one dialog, later passes
+    // trust an immediate zero-count (the page is already "warmed up").
+    if (i === 0) {
+      await locator.first().waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+    }
     const count = await locator.count().catch(() => 0);
     if (count === 0) break;
     await locator.first().click().catch(() => {});
