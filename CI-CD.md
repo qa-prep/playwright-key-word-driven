@@ -95,7 +95,7 @@ after the first install) as somewhere to actually build this JSON - edit it
 with your real values, then feed the file straight in:
 
 ```bash
-gh secret set CI_SECRETS_JSON --repo <you>/<your-tests-repo> < config/ci-secrets.json
+gh secret set CI_SECRETS_JSON --repo <you>/<your-repo-that-will-trigger-tests> < config/ci-secrets.json
 ```
 
 Run this yourself, in your own terminal - same reasoning as the PAT further
@@ -238,7 +238,7 @@ go through the browser, logged in as you, with no API path around it. If
 you're working through this with an AI assistant, this is the part you do
 yourself:
 
-1. Go to **[github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta)**
+1. Go to **[github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens)**
    (this is the "fine-grained" token page, not the older "classic" one) and
    click **Generate new token**.
 2. Give it a name that says what it's for, e.g. `dash-sites-tests-checkout`,
@@ -256,17 +256,23 @@ yourself:
    annoying, short enough to bound the risk.
 7. Click **Generate token**. GitHub shows you the value **exactly once**,
    copy it now.
-8. Store it as a secret on the **app repo** (not the test repo, the one whose
-   workflow needs to read the other one):
+8. Store it as a secret on the **app repo** - the one whose workflow will
+   actually run (not the test repo, which just gets read):
    ```bash
-   gh secret set DASH_SITES_TESTS_PAT --repo <you>/<app-repo>
+   echo -n 'paste-the-pat-value-here' > /tmp/pat.txt
+   gh secret set DASH_SITES_TESTS_PAT --repo <you>/<app-repo> < /tmp/pat.txt
+   rm /tmp/pat.txt
    ```
    Run this yourself, in your own terminal. If you paste the raw token value
    into a chat with an AI assistant to have it run this for you, that value
    is now sitting in that conversation's history, which defeats a good chunk
-   of the point of scoping the token down carefully in the first place. Let
-   `gh secret set` prompt you for it instead, it reads the value without
-   echoing it anywhere.
+   of the point of scoping the token down carefully in the first place.
+   Feeding a file in with `<` rather than pasting into `gh secret set`'s
+   interactive prompt matters too, same reasoning as `CI_SECRETS_JSON`
+   above: a terminal's bracketed-paste markers or a stray line break can
+   silently corrupt a pasted value, and a file sent via `<` has no
+   terminal prompt involved at all for that to happen to. `echo -n` avoids
+   a trailing newline sneaking into the token value.
 
 Once it's stored, reference it from the app repo's workflow like any other
 secret, passed to the `token:` input of the checkout step for the *other*
