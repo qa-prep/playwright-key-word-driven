@@ -202,6 +202,13 @@ fi
 RUN_START_EPOCH=$(date +%s)
 RUN_START_HUMAN=$(date "+%Y-%m-%d %H:%M:%S")
 
+# TEMPORARY DIAGNOSTIC - remove once Slack delivery is confirmed working.
+# Lengths only, never the actual token/channel values. ${_VAR:-} first since
+# set -u would otherwise crash the whole script if either is ever unset.
+_SLACK_BOT_TOKEN_DEBUG="${_SLACK_BOT_TOKEN:-}"
+_SLACK_CHANNEL_DEBUG="${_SLACK_CHANNEL:-}"
+echo "[slack-debug] _SLACK_ENABLED=[$_SLACK_ENABLED] SLACK_SUPPRESSED_BY_DEBUG=[$SLACK_SUPPRESSED_BY_DEBUG] _SLACK_NOTIFY_MODE=[$_SLACK_NOTIFY_MODE] _SLACK_BOT_TOKEN_LEN=[${#_SLACK_BOT_TOKEN_DEBUG}] _SLACK_CHANNEL_LEN=[${#_SLACK_CHANNEL_DEBUG}]" >&2
+
 if [ "$_SLACK_ENABLED" = "true" ] && [ "$SLACK_SUPPRESSED_BY_DEBUG" = "false" ]; then
   node scripts/notify-slack.mjs \
     --phase=start \
@@ -359,6 +366,7 @@ if [ "$_SLACK_ENABLED" = "true" ] && [ "$SLACK_SUPPRESSED_BY_DEBUG" = "false" ];
   node scripts/notify-slack.mjs \
     --phase=finish \
     --results="$RESULTS_JOINED" \
+    --exit-code="$TEST_EXIT_CODE" \
     --env="$ENV" \
     --project="$PROJECT" \
     --tags="$TAGS_CLEAN" \

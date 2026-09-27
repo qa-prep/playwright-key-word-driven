@@ -217,7 +217,14 @@ for (const p of jsonPaths) {
   allFailures.push(...collectFailuresFromReport(p, process.cwd()));
 }
 
-const hasFailure = totals.unexpected > 0;
+// A hard crash (e.g. a PRE_TEST_N phase erroring out before Playwright ever
+// starts, like "No tests found") never writes a results.json at all, so
+// totals.unexpected alone would silently read as "0 failed" - fall back to
+// run-tests.sh's own exit code so a phase that crashed before producing any
+// report still shows up as a real failure, not a false "PASSED".
+const exitCode = Number(args['exit-code'] ?? 0);
+const hasReportedFailure = totals.unexpected > 0;
+const hasFailure = hasReportedFailure || exitCode !== 0;
 if (SLACK_NOTIFY_MODE === 'on-failure' && !hasFailure) process.exit(0);
 
 const icon = hasFailure ? ':x:' : ':white_check_mark:';
@@ -228,6 +235,10 @@ let message =
   `${icon} *Playwright run ${status}*\n` +
   `Passed: ${totals.expected + totals.flaky}  Failed: ${totals.unexpected}  Skipped: ${totals.skipped}\n` +
   timingLine;
+
+if (hasFailure && !hasReportedFailure) {
+  message += `\n\n:warning: A phase failed before producing any test report (exit code ${exitCode}) - check the workflow logs for the raw error, nothing to show step-by-step here.`;
+}
 
 if (hasFailure) {
   message += formatFailuresBlock(allFailures);
