@@ -34,8 +34,18 @@ When('I click if exists {string}', async ({ page, vars }, selector) => {
   await locator.first().waitFor({ state: 'visible', timeout: 200 }).catch(() => {});
   const count = await locator.count().catch(() => 0);
   if (count === 0) return;
-  await locator.first().click().catch(() => {});
+  if (count === 1) {
+    await locator.first().click().catch(() => {});
+  }
+  else { // this handles duplicate elements with the same selector (but possibly only one will be clickable, basically loop until clicked)
+      for (let i = 0; i < count; i++) {
+        const clicked = await locator.nth(i).click({ trial: false, force: false, timeout: 400 })
+          .then(() => true).catch(() => false);
+        if (clicked) break;
+      }
+    }
 });
+
 
 
 When('I set field {string} to {string}', async ({ page, vars }, selector, value) => {
