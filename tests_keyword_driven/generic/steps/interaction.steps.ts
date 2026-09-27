@@ -27,15 +27,16 @@ When('I attempt click {string}', async ({ page, vars }, selector) => {
   await locator.click({ trial: false, force: false }).catch(() => {}); // best-effort, do not fail if unclickable
 });
 
-// For "click if it's there" gates (cookie banners, ToS/policy dialogs)
+// For "click if it's there" gates (cookie banners, ToS/policy dialogs).
 When('I click if exists {string}', async ({ page, vars }, selector) => {
   const rawSelector = resolveVars(selector, vars);
-    const locator = await resolveLocator(page, rawSelector);  // we wait for no more than 200ms
-    await locator.first().waitFor({ state: 'visible', timeout: 200 }).catch(() => {});
-    const count = await locator.count().catch(() => 0);
-    if (count === 0) return;
-    await locator.first().click().catch(() => {});
+  const locator = await resolveLocator(page, rawSelector);  // we wait for no more than 200ms
+  await locator.first().waitFor({ state: 'visible', timeout: 200 }).catch(() => {});
+  const count = await locator.count().catch(() => 0);
+  if (count === 0) return;
+  await locator.first().click().catch(() => {});
 });
+
 
 When('I set field {string} to {string}', async ({ page, vars }, selector, value) => {
   const locator = await resolveLocator(page, resolveVars(selector, vars));
