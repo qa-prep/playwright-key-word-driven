@@ -42,7 +42,7 @@ belong in your own repo, built by cloning this one as a starting point.
 5. **Add a GitHub Actions workflow** at `.github/workflows/tests.yml`, on
    **the repo whose push should trigger a run** - call this the *trigger
    repo* from here on. For the simple case below, that's this same test
-   repo. If you're instead triggering from a separate app repo whose push
+   repo. If you're instead triggering from a separate repo whose push
    should run tests that live over here (see "Triggering tests from a
    different private repo" further down), the trigger repo is that *other*
    repo instead - the workflow file, and everything in step 6, belongs
@@ -232,17 +232,16 @@ secret, assembled into `config/ci.env` fresh each run, never committed.
 
 ## Triggering tests from a different private repo
 
-A common shape: your actual product lives in one repo (call it the app repo
-- this is the *trigger repo* from the Steps section above, just with a more
-concrete name now that there's a real app on the other end of it), your
-tests live in this separate test repo, and you want a push to the app repo
-to trigger a run of the tests. That means the app repo's workflow needs to
-check out the test repo too, and if the test repo is private, the app
-repo's default `GITHUB_TOKEN` can't read it, that token only has access to
-the repo it belongs to.
+A common shape: your actual product lives in one repo - the trigger repo
+from the Steps section above, now with a real app on the other end of it -
+your tests live in this separate test repo, and you want a push to the
+trigger repo to trigger a run of the tests. That means the trigger repo's
+workflow needs to check out the test repo too, and if the test repo is
+private, the trigger repo's default `GITHUB_TOKEN` can't read it, that
+token only has access to the repo it belongs to.
 
 The fix is a **Personal Access Token (PAT)**: a credential you generate once,
-scoped to read just the one test repo, stored as a secret on the app repo.
+scoped to read just the one test repo, stored as a secret on the trigger repo.
 
 **This is the one genuinely manual step in this entire setup.** Everything
 else here, secrets, workflow files, config assembly, can be scripted or done
@@ -269,11 +268,11 @@ yourself:
    annoying, short enough to bound the risk.
 7. Click **Generate token**. GitHub shows you the value **exactly once**,
    copy it now.
-8. Store it as a secret on the **app repo** - the one whose workflow will
+8. Store it as a secret on the **trigger repo** - the one whose workflow will
    actually run (not the test repo, which just gets read):
    ```bash
    echo -n 'paste-the-pat-value-here' > /tmp/pat.txt
-   gh secret set DASH_SITES_TESTS_PAT --repo <you>/<app-repo> < /tmp/pat.txt
+   gh secret set DASH_SITES_TESTS_PAT --repo <you>/<trigger-repo> < /tmp/pat.txt
    rm /tmp/pat.txt
    ```
    Run this yourself, in your own terminal. If you paste the raw token value
@@ -287,7 +286,7 @@ yourself:
    terminal prompt involved at all for that to happen to. `echo -n` avoids
    a trailing newline sneaking into the token value.
 
-Once it's stored, reference it from the app repo's workflow like any other
+Once it's stored, reference it from the trigger repo's workflow like any other
 secret, passed to the `token:` input of the checkout step for the *other*
 repo (your own repo's checkout, first in the job, doesn't need it, the
 default token already covers that one):
