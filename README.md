@@ -35,7 +35,7 @@ This framework is built around a few opinions:
 - **One connection per worker**, not per test — keeps parallel runs fast.
 - **Debug logging by category** (`sql`, `steps`, etc.) that's off by default and switched on via a single `debug-mode=` flag.
 - **Timestamped, non-overwritten HTML reports per project**, so you always know what ran and when.
-- **All local config lives under `config/` and is entirely yours** — the installer lays down starter copies once and never overwrites them again; the whole folder is gitignored, so credentials and personal settings never end up in git.
+- **All local config lives under `config/` and is entirely yours** — the installer lays down starter copies once and never overwrites them again; `*.env` files are gitignored, so credentials never end up in git (`*.config` files are the one deliberate exception — no credentials belong there either, just safe-to-share settings).
 - **Optional Slack notifications** — post a message when a run starts and another when it finishes, with pass/fail counts and duration, without requiring Slack at all if you don't want it.
 
 ## Requirements
@@ -74,7 +74,7 @@ The installer will:
 - Install required dependencies (`dotenv`, `mysql2`, `playwright-bdd`, `@cucumber/cucumber`)
 - Make `run-tests.sh` executable
 
-All three files under `config/` are yours from that point on — the installer never overwrites any of them on a later run, and the whole `config/` folder is gitignored, so edit them freely with your own DB credentials, Slack details, and preferred defaults.
+All three files under `config/` are yours from that point on — the installer never overwrites any of them on a later run. `config/local.env` is gitignored, so edit it freely with your own DB credentials and Slack token; `config/default-settings.config` is deliberately *not* gitignored (no credentials belong there either) so your preferred defaults can be committed and shared.
 
 Open `config/local.env` and fill in your database details if you're using the DB helpers — otherwise the defaults are enough to get started:
 
@@ -84,33 +84,33 @@ _DB_PORT=3306
 _DB_NAME=your-db-name
 _DB_USER=your-db-user
 _DB_PASSWORD=your-db-pass
-
-_APP_URL=http://localhost:5173
-_API_URL=http://localhost/api
 ```
 
-`env=<name>` on `run-tests.sh` loads `config/<name>.env` (defaults to `local`), so you can keep a separate file per environment (`config/staging.env`, `config/ci.env`, etc.), each pointing at its own database and app URLs — just make sure `SETTINGS_FILE=config/default-settings.config` is set in each one.
+`_APP_URL`/`_API_URL` and everything else non-secret live in `config/default-settings.config` instead (see the Settings table below) — not credentials, so they don't belong in the gitignored env file.
+
+`env=<name>` on `run-tests.sh` loads `config/<name>.env` (defaults to `local`), so you can keep a separate file per environment (`config/staging.env`, `config/ci.env`, etc.), each pointing at its own database — just make sure `_SETTINGS_FILE=config/default-settings.config` (or your own settings file) is set in each one.
 
 ## Settings (`config/default-settings.config`)
 
-Behaviour toggles laid down by the installer, overridable per run via CLI flags of the same name (e.g. `browsers=firefox`) or by editing the file directly:
+Behaviour toggles laid down by the installer, overridable per run via CLI flags of the same name minus the underscore (e.g. `browsers=firefox` sets `_BROWSERS`) or by editing the file directly. Every key is `_`-prefixed and, like any `_TOKEN`, directly readable from a feature file too — `When I spit "_DEBUG_MODE"` works with no extra setup, since settings files and env files both get `set -a`-sourced the same way:
 
 | Setting | Options | Default |
 |---|---|---|
-| `BROWSERS` | `chrome` \| `firefox` \| `safari` \| `mixed` \| comma-separated list | `chrome` |
-| `WORKERS` | `default` \| `max` \| a positive whole number | `default` |
-| `HEADED` | `true` \| `false` | `false` |
-| `REPORT_MODE` | `none` \| `never` \| `on-failure` \| `always` | `never` |
-| `DEBUG_MODE` | `off` \| `all` \| `sql` \| `steps` | `off` |
-| `SPEED` | `fast` \| `medium` \| `slow` \| `vslow` | `fast` |
-| `SCREENSHOT_ON_FAIL` | `true` \| `false` | `true` |
-| `SLACK_ENABLED` | `true` \| `false` | `false` |
-| `SLACK_NOTIFY_MODE` | `never` \| `on-failure` \| `always` | `on-failure` |
-| `SLACK_NEVER_IN_DEBUG` | `true` \| `false` | `true` |
+| `_BROWSERS` | `chrome` \| `firefox` \| `safari` \| `mixed` \| comma-separated list | `chrome` |
+| `_WORKERS` | `default` \| `max` \| a positive whole number | `default` |
+| `_HEADED` | `true` \| `false` | `false` |
+| `_REPORT_MODE` | `none` \| `never` \| `on-failure` \| `always` | `never` |
+| `_DEBUG_MODE` | `off` \| `all` \| `sql` \| `steps` | `off` |
+| `_SPEED` | `fast` \| `medium` \| `slow` \| `vslow` | `fast` |
+| `_SCREENSHOT_ON_FAIL` | `true` \| `false` | `true` |
+| `_SLACK_ENABLED` | `true` \| `false` | `false` |
+| `_SLACK_NOTIFY_MODE` | `never` \| `on-failure` \| `always` | `on-failure` |
+| `_SLACK_NEVER_IN_DEBUG` | `true` \| `false` | `true` |
+| `_APP_URL` / `_API_URL` | any URL | `http://localhost:5173` / `http://localhost/api` |
 
 ## Slack notifications
 
-Set `SLACK_ENABLED=true` in your settings file and provide `SLACK_BOT_TOKEN` / `SLACK_CHANNEL` in `config/local.env` to get a message when a run starts and another when it finishes (pass/fail counts, duration, and the exact command used).
+Set `_SLACK_ENABLED=true` in your settings file and provide `_SLACK_BOT_TOKEN` / `_SLACK_CHANNEL` in `config/local.env` to get a message when a run starts and another when it finishes (pass/fail counts, duration, and the exact command used). On failure, the finish message also lists up to 5 failing tests — Feature, Scenario, the exact step and `.feature` file/line, and the assertion's expected-vs-actual detail.
 
 To set up a Slack app:
 1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **Blank app**

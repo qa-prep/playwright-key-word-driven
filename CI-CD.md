@@ -54,8 +54,15 @@ belong in your own repo, built by cloning this one as a starting point.
 Two different things end up looking similar, worth being clear on which is
 which:
 
-- **Config files under `config/`** are gitignored, real credentials on your
-  own machine, never committed, never seen by CI.
+- **`config/*.env` files** are gitignored, real credentials on your own
+  machine, never committed, never seen by CI.
+- **`config/*.config` files** (e.g. `config/default-settings.config`,
+  `config/ci-settings.config`) are the one exception: no credentials belong
+  in them, ever, only deterministic non-secret values - fixed URLs/ports for
+  a throwaway CI stack, browser/Slack behavior settings, even
+  `PRE_TEST_N`/`POST_TEST_N` phase paths. Safe to commit for real - `.gitignore`
+  carves out `*.config` under `config/` on purpose so these aren't excluded
+  the way `*.env` files are.
 - **`installer/canonical/*`** are the safe placeholder templates (fake DB
   passwords, `xoxb-your-bot-token-here`, etc.), committed on purpose, fine
   for anyone to see.
@@ -65,21 +72,50 @@ which:
   variables inside a running job. Once set, GitHub never shows the value
   again, not even to the repo owner, only overwrite or delete.
 
-A CI workflow step assembles a config file fresh, every run, on the runner's
-disk: start from the safe placeholder template, then append the real secrets
-on top. That assembled file is never committed and is discarded when the job
-ends.
+### One JSON secret, not one secret per credential
 
-```bash
-cp installer/canonical/local.env config/ci.env
-printf '\n_SETTINGS_FILE=config/ci-default-settings.config\n_SLACK_BOT_TOKEN=%s\n_SLACK_CHANNEL=%s\n' \
-  "$SLACK_BOT_TOKEN" "$SLACK_CHANNEL" >> config/ci.env
+Adding a new named GitHub secret for every credential means a matching
+workflow-file change every time, too. Instead, this framework's CI pattern
+uses a **single** secret - conventionally named `CI_SECRETS_JSON` - whose
+value is a JSON object. Its keys are exactly the `_TOKEN` names your tests
+already use:
+
+```json
+{
+  "_SLACK_BOT_TOKEN": "xoxb-...",
+  "_SLACK_CHANNEL": "C0...",
+  "_DB_USER": "...",
+  "_DB_PASSWORD": "..."
+}
 ```
 
-The leading `\n` in that `printf` matters: `installer/canonical/local.env`
-has no trailing newline, so a plain `echo ... >> file` glues straight onto
-its last line instead of starting a new one, and the "override" never gets
-parsed as its own assignment.
+```bash
+gh secret set CI_SECRETS_JSON --repo <you>/<your-tests-repo>
+# paste the JSON object (with real values), then Ctrl+D
+```
+
+Run this yourself, in your own terminal - same reasoning as the PAT further
+down, pasting real credential values into a chat puts them in that
+conversation's history.
+
+The workflow's "Set up CI config" step (see the example below) parses that
+one secret generically and writes every key it finds into a freshly
+generated `config/ci.env` - it has no fixed list of names to keep in sync,
+so a brand-new credential later never needs a workflow-file change, just add
+the key to that one secret's value in GitHub's UI.
+
+Why one secret is still safe: GitHub only auto-redacts the *exact* registered
+secret string from logs, and the whole JSON blob is what's registered - so
+that's what gets masked if it appears verbatim. Never `echo`/`cat`/log the
+parsed-out individual values or the assembled `config/ci.env` anywhere in
+the workflow: a value extracted out of the blob isn't separately registered,
+so it wouldn't get masked the way a normal named secret would.
+
+Everything **non-secret** the tests need belongs in a plain, committed
+`config/ci-settings.config` instead (see `installer/canonical/ci-settings.config`
+for the template) - the generated `config/ci.env` only ever needs a
+`_SETTINGS_FILE` line pointing at it, plus whatever came out of
+`CI_SECRETS_JSON`.
 
 ## Example workflow
 
@@ -110,18 +146,22 @@ jobs:
       - name: Set up playwright.config.ts
         run: cp installer/canonical/playwright.config.ts.bak playwright.config.ts
 
+      # config/ci-settings.config is already committed (see "Secrets vs
+      # config files" above) - this step only has to inject the real
+      # credentials, generically, from the one CI_SECRETS_JSON secret.
       - name: Set up CI config
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          CI_SECRETS_JSON: ${{ secrets.CI_SECRETS_JSON }}
         run: |
           mkdir -p config
-          cp installer/canonical/local.env config/ci.env
-          printf '\n_SETTINGS_FILE=config/ci-default-settings.config\n_SLACK_BOT_TOKEN=%s\n_SLACK_CHANNEL=%s\n' \
-            "$SLACK_BOT_TOKEN" "$SLACK_CHANNEL" >> config/ci.env
-
-          cp installer/canonical/default-settings.config config/ci-default-settings.config
-          printf '\nSLACK_ENABLED=true\n' >> config/ci-default-settings.config
+          echo "_SETTINGS_FILE=config/ci-settings.config" > config/ci.env
+          node <<'NODE_SCRIPT'
+          const fs = require('fs');
+          const secrets = JSON.parse(process.env.CI_SECRETS_JSON);
+          const esc = (v) => "'" + String(v).replace(/'/g, "'\\''") + "'";
+          const lines = Object.entries(secrets).map(([k, v]) => `${k}=${esc(v)}`);
+          fs.appendFileSync('config/ci.env', lines.join('\n') + '\n');
+          NODE_SCRIPT
 
       - name: Run tests
         run: ./run-tests.sh project=myProjectA tags=@exampleTests env=ci
@@ -134,9 +174,10 @@ jobs:
           retention-days: 30
 ```
 
-Swap the `Run tests` step for your own `project=`/`tags=`, and skip the Slack
-env/secrets entirely if you don't want notifications, `SLACK_ENABLED` just
-stays `false` from the canonical template with no changes needed.
+Swap the `Run tests` step for your own `project=`/`tags=`. Skip Slack entirely
+if you don't want notifications - just leave `_SLACK_ENABLED` out of
+`config/ci-settings.config` (or set it `false`) and leave `_SLACK_BOT_TOKEN`/
+`_SLACK_CHANNEL` out of `CI_SECRETS_JSON`.
 
 ## Testing against a real app/database in CI
 
@@ -144,18 +185,29 @@ The example above only proves the pipeline itself works, since the bundled
 examples need no database or app under test. Actually testing your real
 project means the app and its database need to exist somewhere the CI runner
 can reach, `localhost` inside a GitHub-hosted runner means the runner itself,
-not your laptop. Two ways to get there:
+not your laptop. Three ways to get there:
 
+- **Start your app's own `docker-compose.yml` directly in the job**, if it
+  has one: `docker compose up -d --build`, a short wait-loop polling the
+  app's URL (and the DB, if an install/setup flow needs it) before running
+  tests, and `docker compose down -v` at the end (`if: always()`, so it
+  cleans up even on failure). This is the closest match to your own local
+  testing, since it's the exact same containers on the exact same ports. If
+  the app needs a one-time install/setup flow before anything else can log
+  in, that's exactly what `PRE_TEST_N` is for: put the install feature under
+  its own folder (e.g. `pre-tests-1/`), point `PRE_TEST_1` at it from
+  `config/ci-settings.config`, and it runs before the main suite every time,
+  stopping the whole run if it fails.
 - **A GitHub Actions service container**, e.g. a `services: db: image: mysql:8.0.x`
   block in the workflow, matching whatever version your app's own
-  `docker-compose.yml` uses, then start your app in the same job before
-  running tests against it.
-- **A real reachable staging/test deployment**, with its credentials as
-  repository secrets same as Slack's above.
+  `docker-compose.yml` uses, if your app has no compose file of its own to
+  stand up directly.
+- **A real reachable staging/test deployment**, with its credentials in
+  `CI_SECRETS_JSON` same as everything else.
 
-Either way, the same config-assembly pattern applies: real values as
-repository secrets, assembled into a config file fresh each run, never
-committed.
+Either way, the same pattern applies: non-secret values in
+`config/ci-settings.config`, real credentials in the one `CI_SECRETS_JSON`
+secret, assembled into `config/ci.env` fresh each run, never committed.
 
 ## Triggering tests from a different private repo
 
