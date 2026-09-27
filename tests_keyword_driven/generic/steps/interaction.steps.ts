@@ -28,7 +28,9 @@ When('I attempt click {string}', async ({ page, vars }, selector) => {
 });
 
 // For "click if it's there" gates (cookie banners, ToS/policy dialogs).
-When('I click if exists {string}', async ({ page, vars }, selector) => {
+// Can also be use for duplicate elements (better to use unique selectors, but when impossible this is an option)
+// It will click 0 if not present, but the first it can if it finds it
+When('I click any {string}', async ({ page, vars }, selector) => {
   const rawSelector = resolveVars(selector, vars);
   const locator = await resolveLocator(page, rawSelector);  // we wait for no more than 200ms
   await locator.first().waitFor({ state: 'visible', timeout: 200 }).catch(() => {});
