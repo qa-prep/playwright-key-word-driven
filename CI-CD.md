@@ -89,13 +89,13 @@ already use:
 }
 ```
 
-The installer lays down `config/secrets.json` for you (from
-`installer/canonical/secrets.json`, placeholder values, never touched again
+The installer lays down `config/ci-secrets.json` for you (from
+`installer/canonical/ci-secrets.json`, placeholder values, never touched again
 after the first install) as somewhere to actually build this JSON - edit it
 with your real values, then feed the file straight in:
 
 ```bash
-gh secret set CI_SECRETS_JSON --repo <you>/<your-tests-repo> < config/secrets.json
+gh secret set CI_SECRETS_JSON --repo <you>/<your-tests-repo> < config/ci-secrets.json
 ```
 
 Run this yourself, in your own terminal - same reasoning as the PAT further
@@ -104,7 +104,7 @@ conversation's history. Feeding a file in with `<` matters too, not just
 convenience: pasting multi-line JSON into `gh secret set`'s interactive
 prompt is an easy way to end up with a corrupted value (a terminal's
 bracketed-paste markers, or a stray line break landing inside a long token,
-both silently break the JSON) - `< config/secrets.json` sends the file's
+both silently break the JSON) - `< config/ci-secrets.json` sends the file's
 exact bytes with no terminal prompt involved at all, so there's nothing for
 that kind of artifact to sneak into.
 

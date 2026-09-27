@@ -126,27 +126,27 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 2.8. Lay down config/secrets.json from canonical, same rule as the other
+# 2.8. Lay down config/ci-secrets.json from canonical, same rule as the other
 #      config files: only if missing, never touched again. This is the file
 #      you edit with your real CI credentials, then feed straight into
-#      `gh secret set CI_SECRETS_JSON --repo <you>/<repo> < config/secrets.json`
+#      `gh secret set CI_SECRETS_JSON --repo <you>/<repo> < config/ci-secrets.json`
 #      (see CI-CD.md) - editing a real file and piping it in avoids ever
 #      pasting multi-line secret content into an interactive terminal
 #      prompt, which is an easy way to end up with a mangled/corrupted
 #      secret value (bracketed-paste artifacts, embedded stray characters).
 # ---------------------------------------------------------------------------
-if [ -f "$CANONICAL_DIR/secrets.json" ]; then
-  if [ -f "config/secrets.json" ]; then
-    echo "-> config/secrets.json already exists, skipping"
+if [ -f "$CANONICAL_DIR/ci-secrets.json" ]; then
+  if [ -f "config/ci-secrets.json" ]; then
+    echo "-> config/ci-secrets.json already exists, skipping"
   else
-    echo "-> Copying framework's config/secrets.json template into place"
+    echo "-> Copying framework's config/ci-secrets.json template into place"
     mkdir -p config
-    cp "$CANONICAL_DIR/secrets.json" config/secrets.json
-    echo "-> Edit config/secrets.json with your real CI credentials, then:"
-    echo "->   gh secret set CI_SECRETS_JSON --repo <you>/<repo> < config/secrets.json"
+    cp "$CANONICAL_DIR/ci-secrets.json" config/ci-secrets.json
+    echo "-> Edit config/ci-secrets.json with your real CI credentials, then:"
+    echo "->   gh secret set CI_SECRETS_JSON --repo <you>/<repo> < config/ci-secrets.json"
   fi
 else
-  echo "!! No canonical secrets.json found in $CANONICAL_DIR — nothing to apply"
+  echo "!! No canonical ci-secrets.json found in $CANONICAL_DIR — nothing to apply"
 fi
 
 # ---------------------------------------------------------------------------
