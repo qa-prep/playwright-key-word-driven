@@ -2,6 +2,8 @@
 
 #usage:  ./run-tests.sh tests-type=feature project=myProjectA tags=@keywordTest debug-mode=all headed=true"
 #usage:  ./run-tests.sh project=myProjectA tags=@keywordTest"
+#usage:  ./run-tests.sh env=debug tags=@register project=myProjectA inspector=true"
+#usage:  ./run-tests.sh project=myProjectA tags=@keywordTest silent=true"
 
 set -euo pipefail
 
@@ -39,9 +41,9 @@ set -a
 source "$SETTINGS_FILE"
 set +a
 
-TESTS_TYPE="${TESTS_TYPE:-feature}"
+TESTS_TYPE="${TESTS_TYPE:-${_TESTS_TYPE:-feature}}"
 TAGS="${TAGS:-}"
-PROJECT="${PROJECT:-default}"
+PROJECT="${PROJECT:-${_PROJECT:-default}}"
 _HEADED="${_HEADED:-false}"
 _REPORT_MODE="${_REPORT_MODE:-never}"
 _DEBUG_MODE="${_DEBUG_MODE:-off}"
@@ -54,6 +56,8 @@ _SCREENSHOT_ON_FAIL="${_SCREENSHOT_ON_FAIL:-true}"
 _SLACK_ENABLED="${_SLACK_ENABLED:-false}"
 _SLACK_NOTIFY_MODE="${_SLACK_NOTIFY_MODE:-on-failure}"
 _SLACK_NEVER_IN_DEBUG="${_SLACK_NEVER_IN_DEBUG:-true}"
+_SILENT="${_SILENT:-false}"
+_INSPECTOR="${_INSPECTOR:-false}"
 
 for arg in "$@"; do
   key="${arg%%=*}"
@@ -75,6 +79,8 @@ for arg in "$@"; do
     slack-notify-mode) _SLACK_NOTIFY_MODE="$value" ;;
     slack-never-in-debug) _SLACK_NEVER_IN_DEBUG="$value" ;;
     screenshot-on-fail) _SCREENSHOT_ON_FAIL="$value" ;;
+    silent) _SILENT="$value" ;;
+    inspector) _INSPECTOR="$value" ;;
     # PRE_TEST_N/POST_TEST_N (see config/default-settings.config) are open-ended,
     # not a fixed list, so this matches the shape rather than a specific name.
     # Exported directly (not staged into a named var like the others above)
@@ -86,6 +92,17 @@ for arg in "$@"; do
     *) echo "Unknown argument: $key" >&2; exit 1 ;;
   esac
 done
+
+
+case "$_SILENT" in
+  true|false) ;;
+  *) echo "silent must be true or false" >&2; exit 1 ;;
+esac
+
+case "$_INSPECTOR" in
+  true|false) ;;
+  *) echo "inspector must be true or false" >&2; exit 1 ;;
+esac
 
 case "$_SLACK_ENABLED" in
   true|false) ;;
@@ -169,19 +186,32 @@ export _REPORT_MODE
 export _SCREENSHOT_ON_FAIL
 export ENV
 export PROJECT
+export _PROJECT="$PROJECT"
+export _TESTS_TYPE="$TESTS_TYPE"
+export _INSPECTOR
+
+
+if [ "$_SILENT" != "true" ]; then
+  echo -e "Running tests with the following configuration:"
+  echo -e "  Tests type: $TESTS_TYPE  Project: $PROJECT"
+  echo -e "  ENV File: $ENV.env SETTINGS_FILE: $SETTINGS_FILE"
+fi
+
 
 if [ "$_DEBUG_MODE" != "off" ]; then
-  ORANGE='\033[38;5;208m'
-  NC='\033[0m'
-  MSG="[debug-mode=${_DEBUG_MODE}] forcing a single worker — tests will run serially, not in parallel"
-  ENVMSG="[env: $ENV | browser: $BROWSERS_RESOLVED | speed: $_SPEED | headed: $_HEADED | report: $_REPORT_MODE"
-  APPMSG="[app_url: ${_APP_URL:-unset} | api_url: ${_API_URL:-unset}]"
-  BORDER=$(printf '%*s' "$((${#MSG} + 4))" '' | tr ' ' '*')
-  echo -e "${ORANGE}${BORDER}${NC}"
-  echo -e "${ORANGE}* ${MSG} *${NC}"
-  echo -e "${ORANGE}* ${ENVMSG} *${NC}"
-  echo -e "${ORANGE}* ${APPMSG} *${NC}"
-  echo -e "${ORANGE}${BORDER}${NC}"
+  if [ "$_SILENT" != "true" ]; then
+    ORANGE='\033[38;5;208m'
+    NC='\033[0m'
+    MSG="[debug-mode=${_DEBUG_MODE}] forcing a single worker — tests will run serially, not in parallel"
+    ENVMSG="[env: $ENV | browser: $BROWSERS_RESOLVED | speed: $_SPEED | headed: $_HEADED | report: $_REPORT_MODE"
+    APPMSG="[app_url: ${_APP_URL:-unset} | api_url: ${_API_URL:-unset}]"
+    BORDER=$(printf '%*s' "$((${#MSG} + 4))" '' | tr ' ' '*')
+    echo -e "${ORANGE}${BORDER}${NC}"
+    echo -e "${ORANGE}* ${MSG} *${NC}"
+    echo -e "${ORANGE}* ${ENVMSG} *${NC}"
+    echo -e "${ORANGE}* ${APPMSG} *${NC}"
+    echo -e "${ORANGE}${BORDER}${NC}"
+  fi
   export PW_DEBUG_WARNED=1
 fi
 
@@ -227,6 +257,9 @@ run_spec() {
   if [ "$_HEADED" = "true" ]; then
     args+=("--headed")
   fi
+  if [ "$_INSPECTOR" = "true" ]; then
+    args+=("--debug")
+  fi
   npx playwright "${args[@]}" || TEST_EXIT_CODE=$?
 }
 
@@ -257,6 +290,9 @@ run_phase() {
   local args=(test "--project=${kind}-${num}-${PROJECT}")
   if [ "$_HEADED" = "true" ]; then
     args+=("--headed")
+  fi
+  if [ "$_INSPECTOR" = "true" ]; then
+    args+=("--debug")
   fi
   npx playwright "${args[@]}"
 }
@@ -295,6 +331,9 @@ run_feature() {
     if [ "$_HEADED" = "true" ]; then
       test_args+=("--headed")
     fi
+    if [ "$_INSPECTOR" = "true" ]; then
+      test_args+=("--debug")
+    fi
     npx playwright "${test_args[@]}" || TEST_EXIT_CODE=$?
   fi
 
@@ -318,22 +357,24 @@ esac
 
 # --- everything below now always runs, pass or fail ---
 
-if [ "$_REPORT_MODE" != "none" ]; then
+if [ "$_REPORT_MODE" != "none" ] && [ "$_SILENT" != "true" ]; then
   echo "Report(s) written under: ${REPORT_BASE}"
 fi
 
 if [ "$_DEBUG_MODE" != "all" ] || [ "$_HEADED" != "true" ]; then
-  RERUN_CMD="./run-tests.sh tests-type=${TESTS_TYPE} project=${PROJECT}"
-  if [ -n "$TAGS_CLEAN" ]; then
-    RERUN_CMD="${RERUN_CMD} tags=${TAGS_CLEAN}"
-  fi
-  RERUN_CMD="${RERUN_CMD} debug-mode=all headed=true speed=slow"
+  if [ "$_SILENT" != "true" ]; then
+    RERUN_CMD="./run-tests.sh tests-type=${TESTS_TYPE} project=${PROJECT}"
+    if [ -n "$TAGS_CLEAN" ]; then
+      RERUN_CMD="${RERUN_CMD} tags=${TAGS_CLEAN}"
+    fi
+    RERUN_CMD="${RERUN_CMD} debug-mode=all headed=true speed=slow"
 
-  CYAN='\033[0;36m'
-  NC='\033[0m'
-  echo ""
-  echo -e "${CYAN}Want to see this run step-by-step, use the following command:${NC}"
-  echo -e "${CYAN}  ${RERUN_CMD}${NC}"
+    CYAN='\033[0;36m'
+    NC='\033[0m'
+    echo ""
+    echo -e "${CYAN}Want to see this run step-by-step, use the following command:${NC}"
+    echo -e "${CYAN}  ${RERUN_CMD}${NC}"
+  fi
 fi
 
 OPEN_NOW=false
@@ -371,8 +412,10 @@ if [ "$_SLACK_ENABLED" = "true" ] && [ "$SLACK_SUPPRESSED_BY_DEBUG" = "false" ];
 fi
 
 if [ "$OPEN_NOW" = true ] && [ -n "$OPEN_REPORT_DIR" ]; then
-  echo ""
-  echo "Opening report... (Ctrl+C to stop the local report server when done)"
+  if [ "$_SILENT" != "true" ]; then
+    echo ""
+    echo "Opening report... (Ctrl+C to stop the local report server when done)"
+  fi
   npx playwright show-report "$OPEN_REPORT_DIR"
 fi
 
