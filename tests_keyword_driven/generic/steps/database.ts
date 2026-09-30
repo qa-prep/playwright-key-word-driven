@@ -5,9 +5,28 @@ import { testAutomationApi } from '../support/testAutomationApi';
 
 const { When } = createBdd(test);
 
-// When I db api count "ds_core_users" rows where column "email" is "mike@test.com" into variable "userCount"
+
+
+
+// When I api count "ds_core_users" rows where column "email" like "mike@test.com" into variable "userCount"
 When(
-  'I db api count {string} rows where column {string} is {string} into variable {string}',
+  'I api count {string} rows where column {string} like {string} into variable {string}',
+  async ({ vars }, tableName, column, value, varName) => {
+    const result = await testAutomationApi.index({
+      table_name: resolveVars(tableName, vars),
+      table_key: column,
+      table_operator: 'LIKE',
+      table_value: `%${resolveVars(value, vars)}%`,
+      limit: 1000,
+    });
+    const count = Array.isArray(result?.data?.rows) ? result.data.rows.length : 0;
+    vars.set(varName, String(count));
+  },
+);
+
+// When I api count "ds_core_users" rows where column "email" is "mike@test.com" into variable "userCount"
+When(
+  'I api count {string} rows where column {string} is {string} into variable {string}',
   async ({ vars }, tableName, column, value, varName) => {
     const result = await testAutomationApi.index({
       table_name: resolveVars(tableName, vars),
@@ -21,9 +40,9 @@ When(
   },
 );
 
-// When I db api get newest "ds_core_users" column "user_id" where column "username" is "automationUser1" into variable "userId"
+// When I api get newest "ds_core_users" column "user_id" where column "username" is "automationUser1" into variable "userId"
 When(
-  'I db api get newest {string} column {string} where column {string} is {string} into variable {string}',
+  'I api get newest {string} column {string} where column {string} is {string} into variable {string}',
   async ({ vars }, tableName, colForExtraction, column, value, varName) => {
     const result = await testAutomationApi.index({
       table_name: resolveVars(tableName, vars),
@@ -44,9 +63,9 @@ When(
   },
 );
 
-// When I db api delete row "ds_core_users" where "email" is "mike+auto@test.com"
+// When I api delete row "ds_core_users" where "email" is "mike+auto@test.com"
 When(
-  'I db api delete row {string} where {string} is {string}',
+  'I api delete row {string} where {string} is {string}',
   async ({ vars }, tableName, column, value) => {
     await testAutomationApi.destroy({
       table_name: resolveVars(tableName, vars),
@@ -56,9 +75,9 @@ When(
   },
 );
 
-// When I db api update table "ds_core_users" column "email_verified_at" where "user_id" is "+var(userId)" to value "2026-09-24 10:00:00"
+// When I api update table "ds_core_users" column "email_verified_at" where "user_id" is "+var(userId)" to value "2026-09-24 10:00:00"
 When(
-  'I db api update table {string} column {string} where {string} is {string} to value {string}',
+  'I api update table {string} column {string} where {string} is {string} to value {string}',
   async ({ vars }, tableName, columnToUpdate, whereColumn, whereValue, toValue) => {
     await testAutomationApi.update({
       table_name: resolveVars(tableName, vars),

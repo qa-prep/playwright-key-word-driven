@@ -14,14 +14,34 @@ export interface ParsedCurlRequest {
   body?: string;
 }
 
-const TEMPLATES_ROOT = path.resolve(__dirname, '../curl-templates');
+const GENERIC_TEMPLATES_ROOT = path.resolve(__dirname, '../curl-templates');
 
-function templateFile(templateName: string): string {
-  return path.join(TEMPLATES_ROOT, `${templateName}.curl`);
+// tests_keyword_driven/projects/<PROJECT>/curl-templates - same PROJECT
+// run-tests.sh exports and playwright.config.ts reads. A project can
+// override any generic template by name (e.g. its own auth/register.curl
+// with fields the generic one doesn't need), or add project-only ones,
+// without touching the generic set other projects share.
+function projectTemplatesRoot(): string {
+  const project = process.env.PROJECT ?? 'default';
+  return path.resolve(__dirname, '../../projects', project, 'curl-templates');
+}
+
+// Project-specific first, generic as the fallback - first one that exists
+// on disk wins. Returns null if neither does, so callers can throw a
+// message naming both paths they checked, not just fail with ENOENT on
+// whichever one they happened to try.
+function resolveTemplateFile(templateName: string): string | null {
+  const projectPath = path.join(projectTemplatesRoot(), `${templateName}.curl`);
+  if (existsSync(projectPath)) return projectPath;
+
+  const genericPath = path.join(GENERIC_TEMPLATES_ROOT, `${templateName}.curl`);
+  if (existsSync(genericPath)) return genericPath;
+
+  return null;
 }
 
 export function curlTemplateExists(templateName: string): boolean {
-  return existsSync(templateFile(templateName));
+  return resolveTemplateFile(templateName) !== null;
 }
 
 // Comment lines (# or //) are dropped before anything else, so a comment can
@@ -51,7 +71,16 @@ function resolveTemplateVars(template: string, vars: CurlVars): string {
 // landing inside a --data-raw body, which would prematurely close the match
 // below (same as it would break real curl).
 export function loadCurlTemplate(templateName: string, vars: CurlVars): ParsedCurlRequest {
-  const rawTemplate = readFileSync(templateFile(templateName), 'utf8');
+  const file = resolveTemplateFile(templateName);
+  if (!file) {
+    const project = process.env.PROJECT ?? 'default';
+    throw new Error(
+      `curl template "${templateName}" not found. Checked:\n` +
+        `  tests_keyword_driven/projects/${project}/curl-templates/${templateName}.curl\n` +
+        `  tests_keyword_driven/generic/curl-templates/${templateName}.curl`,
+    );
+  }
+  const rawTemplate = readFileSync(file, 'utf8');
   const command = resolveTemplateVars(stripComments(rawTemplate), vars);
 
   const urlMatch = command.match(/--url\s+'([^']*)'/);

@@ -280,14 +280,22 @@ discover_phase_numbers() {
   done | sort -n
 }
 
-# Runs one phase's already-generated project. Tag-unfiltered on purpose,
-# a phase runs everything in its folder, it's not part of the tagged main
-# suite selection.
+# Runs one phase's already-generated project. Uses the same tags= filter as
+# the main suite (see run_feature() below) - if you pass tags=@ci-test, a
+# pre/post-test phase only runs its scenarios tagged @ci-test too, same as
+# the main suite. An untagged phase feature matches nothing once a tag
+# filter is set, which Playwright reports as "No tests found" and fails the
+# phase - deliberately loud, not a silent skip, since a pre-test being
+# skipped by accident (e.g. the install flow) would break everything
+# downstream in a much more confusing way.
 run_phase() {
   local kind="$1" num="$2"  # kind: pre-test | post-test
   mkdir -p "${REPORT_BASE}/${kind}-${num}"
   export REPORT_DIR="${REPORT_BASE}/${kind}-${num}"
   local args=(test "--project=${kind}-${num}-${PROJECT}")
+  if [ -n "$TAGS_CLEAN" ]; then
+    args+=("--grep=$(echo "$TAGS_CLEAN" | tr ',' '|')")
+  fi
   if [ "$_HEADED" = "true" ]; then
     args+=("--headed")
   fi
@@ -299,10 +307,9 @@ run_phase() {
 
 run_feature() {
   # Generates specs for every registered project (main + all phases) in one
-  # pass, tag-unfiltered - tags are applied later, only to the main suite's
-  # own `playwright test` invocation (like run_spec() already does via
-  # --grep), so a PRE_TEST/POST_TEST phase is never accidentally skipped
-  # just because its scenarios don't happen to match the main suite's tags.
+  # pass, tag-unfiltered - the tags= filter is applied per `playwright test`
+  # invocation below (main suite and each phase individually, via --grep),
+  # not at generation time.
   npx bddgen
 
   local phase_failed=false

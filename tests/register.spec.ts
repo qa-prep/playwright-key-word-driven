@@ -9,7 +9,7 @@ test('user can register', { tag: '@register' }, async ({ page }, testInfo) => {
   const browser = testInfo.project.name; // 'chromium' | 'firefox' | 'webkit'
   const username = `username1_${browser}`; // to avoid parallel browser clashes. 
   const emailPrefix = 'testprefix+';
-  const emailPostfix = '@example.com';
+  const emailPostfix = '@' + process.env._AUTO_USER_EMAIL_DOMAIN;
 
   const email = `${emailPrefix}${username}${emailPostfix}`;
   const password = "testPassword123!";

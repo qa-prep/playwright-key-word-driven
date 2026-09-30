@@ -2,7 +2,7 @@
 import { getAutomationApiContext, callTemplate } from './apiClient';
 
 async function post(
-  endpoint: 'index' | 'create' | 'update' | 'destroy' | 'delete-user-by-email' | 'delete-users-by-email-contains',
+  endpoint: 'index' | 'create' | 'batch-create' | 'update' | 'destroy' | 'delete-user-by-email' | 'delete-users-by-email-contains',
   body: Record<string, unknown>,
 ) {
   const api = await getAutomationApiContext();
@@ -17,6 +17,35 @@ async function post(
 export const testAutomationApi = {
   index: (body: Record<string, unknown>) => post('index', body),
   create: (body: Record<string, unknown>) => post('create', body),
+  // One multi-row INSERT for the whole batch server-side (see
+  // TestAutomationController::batchCreate() in dash-sites-creator) - use
+  // this instead of calling create() in a loop for anything more than a
+  // row or two, since create() is one query per row.
+  batchCreate: (tableName: string, rows: Record<string, unknown>[]) =>
+    post('batch-create', { table_name: tableName, rows: JSON.stringify(rows) }),
+  // Generates {namePrefix}1..{namePrefix}N as usernames and
+  // {emailPrefix}1..{emailPrefix}N@<AUTO_USER_EMAIL_DOMAIN> as emails, all sharing the
+  // same password. The prefixes are parameters (not hardcoded) so two
+  // people writing tests can each use their own prefix and never clash -
+  // see config/*.env for the convention (e.g. _AUTO_USER_MIKES_NAME_PREFIX).
+  createUsers: ({
+    count,
+    namePrefix,
+    emailPrefix,
+    password,
+  }: {
+    count: number;
+    namePrefix: string;
+    emailPrefix: string;
+    password: string;
+  }) => {
+    const rows = Array.from({ length: count }, (_, i) => ({
+      username: `${namePrefix}${i + 1}`,
+      email: `${emailPrefix}${i + 1}@`+process.env._AUTO_USER_EMAIL_DOMAIN,
+      password,
+    }));
+    return testAutomationApi.batchCreate('ds_core_users', rows);
+  },
   update: (body: Record<string, unknown>) => post('update', body),
   destroy: (body: Record<string, unknown>) => post('destroy', body),
   // better than deleteUserByEmail() in db/entities/users.ts: this goes through the
