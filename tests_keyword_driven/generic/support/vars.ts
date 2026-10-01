@@ -28,6 +28,8 @@ export const test = base.extend<Fixtures>({
     vars.set('fixturePage2', `file://${path.resolve(__dirname, '../fixtures/test-page-2.html')}`);
     vars.set('tabsPage', `file://${path.resolve(__dirname, '../fixtures/tabs-page.html')}`);
     vars.set('locatorsPage', `file://${path.resolve(__dirname, '../fixtures/locators-page.html')}`);
+    vars.set('clickByTextPage', `file://${path.resolve(__dirname, '../fixtures/click-by-text-page.html')}`);
+    vars.set('setFieldPage', `file://${path.resolve(__dirname, '../fixtures/set-field-page.html')}`);
     await use(vars);
   },
 

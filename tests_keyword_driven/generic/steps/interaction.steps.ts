@@ -2,13 +2,21 @@
 
 import { createBdd } from 'playwright-bdd';
 import { test, resolveVars } from '../support/vars';
-import { resolveLocator } from '../support/locator';
+import { resolveLocator, resolveClickTarget, resolveFieldLocator } from '../support/locator';
 
 const { When } = createBdd(test);
 
+// Click-only resolution (link/button/dropdown/radio/checkbox by visible
+// text, exact before partial) when no explicit prefix is given - see
+// resolveClickTarget() in locator.ts for the full cascade. A native <select>
+// match can't be .click()'d reliably, so it's selectOption()'d instead.
 When('I click {string}', async ({ page, vars }, selector) => {
-  const locator = await resolveLocator(page, resolveVars(selector, vars));
-  await locator.click();
+  const target = await resolveClickTarget(page, resolveVars(selector, vars));
+  if (target.selectOptionLabel !== undefined) {
+    await target.locator.selectOption({ label: target.selectOptionLabel });
+  } else {
+    await target.locator.click();
+  }
 });
 
 When('I click the {string} {string}', async ({ page, vars }, nth, selector) => {
@@ -49,9 +57,11 @@ When('I click any {string}', async ({ page, vars }, selector) => {
 });
 
 
-
+// Field-only resolution (id/name/label/placeholder/data-test-id, exact
+// before partial) when no explicit prefix is given - see
+// resolveFieldLocator() in locator.ts for the full cascade.
 When('I set field {string} to {string}', async ({ page, vars }, selector, value) => {
-  const locator = await resolveLocator(page, resolveVars(selector, vars));
+  const locator = await resolveFieldLocator(page, resolveVars(selector, vars));
   await locator.fill(resolveVars(value, vars));
 });
 
