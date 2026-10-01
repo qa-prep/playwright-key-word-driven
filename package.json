@@ -12,7 +12,8 @@
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
     "fast-glob": "^3.3.3",
-    "playwright-bdd": "^9.2.1"
+    "playwright-bdd": "^9.2.1",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "dotenv": "^18.0.2",

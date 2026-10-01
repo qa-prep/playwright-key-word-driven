@@ -172,6 +172,11 @@ install_if_missing mysql2
 install_if_missing playwright-bdd dev
 install_if_missing @cucumber/cucumber dev
 install_if_missing @types/node dev
+# Without this, there's no local `tsc` binary - `npx tsc` then silently
+# resolves to an unrelated npm package also named "tsc" (a placeholder that
+# just prints a warning and exits 1) instead of failing loudly, which makes
+# a real type error indistinguishable from "no errors found".
+install_if_missing typescript dev
 
 # ---------------------------------------------------------------------------
 # 4. Make run script executable

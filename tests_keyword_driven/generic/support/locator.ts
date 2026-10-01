@@ -3,6 +3,35 @@ import { Page, Locator } from '@playwright/test';
 
 type CandidateFn = (value: string) => Locator;
 
+// role:<roleType>:<name>[,<option>:<value>...], e.g.
+//   role:link:Teams
+//   role:link:Teams,exact:true
+//   role:heading:Title,level:2
+// Options match Playwright's getByRole() options (exact/checked/disabled/
+// expanded/includeHidden/pressed/selected are booleans, level is a number -
+// anything else is passed through as a plain string). Split on comma for
+// options, so a name containing a literal comma isn't supported - use a
+// different locator strategy (css:, text:, etc) for that case.
+function parseRoleValue(value: string): [string, Record<string, unknown>] {
+  const [roleAndName, ...optionParts] = value.split(',');
+  const colonIndex = roleAndName.indexOf(':');
+  const roleType = colonIndex === -1 ? roleAndName : roleAndName.slice(0, colonIndex);
+  const name = colonIndex === -1 ? '' : roleAndName.slice(colonIndex + 1);
+
+  const options: Record<string, unknown> = { name };
+  for (const part of optionParts) {
+    const idx = part.indexOf(':');
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    const rawValue = part.slice(idx + 1).trim();
+    if (rawValue === 'true') options[key] = true;
+    else if (rawValue === 'false') options[key] = false;
+    else if (rawValue !== '' && Number.isFinite(Number(rawValue))) options[key] = Number(rawValue);
+    else options[key] = rawValue;
+  }
+  return [roleType, options];
+}
+
 // Explicit prefixes, if given, use directly, no guessing, no cascade (fast path).
 function buildPrefixedLocator(page: Page, selector: string): Locator | null {
   const prefixHandlers: [string, CandidateFn][] = [
@@ -22,8 +51,8 @@ function buildPrefixedLocator(page: Page, selector: string): Locator | null {
     ['tagName:', (v) => page.locator(v)],
     ['data-test-id:', (v) => page.locator(`[data-test-id="${v}"]`)],
     ['role:', (v) => {
-      const [roleType, ...nameParts] = v.split(':');
-      return page.getByRole(roleType as any, { name: nameParts.join(':') });
+      const [roleType, options] = parseRoleValue(v);
+      return page.getByRole(roleType as any, options as any);
     }],
   ];
 

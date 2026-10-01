@@ -1,0 +1,109 @@
+<!-- location: tests_keyword_driven/generic/fixtures/locators-page.html -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Locator Strategies Fixture</title>
+<style>
+:root{
+  --n:#071f38;--n2:#082b4b;--d:#04182b;--b:#0a3963;
+  --w:#eef5fb;--m:#b9c9d8;--blue:#22a0ff;--orange:#ffb020;
+  --red:#ff6b6b;--green:#24c47a;
+}
+*{box-sizing:border-box}
+body{background:var(--n);color:var(--w);font-family:Arial,Helvetica,sans-serif;margin:0;padding:0}
+.w{max-width:1100px;margin:30px auto;background:var(--n);border:4px solid var(--b);border-radius:20px;overflow:hidden}
+.bar{height:56px;background:var(--d);border-bottom:4px solid var(--b);padding:0 24px;display:flex;align-items:center;gap:10px}
+.dot{width:14px;height:14px;border-radius:50%}
+.r{background:var(--red)}.o{background:var(--orange)}.g{background:var(--green)}
+.fn{margin-left:14px;color:var(--m);font:700 16px Consolas,monospace}
+.ct{padding:28px 40px;display:flex;flex-direction:column;gap:20px}
+.tag{align-self:flex-start;padding:6px 14px;background:var(--d);border-radius:7px;color:#8fcfff;font:800 14px Consolas,monospace}
+h1{font-size:28px;margin:0}
+.qa-banner{background:var(--d);border:2px solid var(--blue);border-radius:10px;padding:12px 18px;font:700 15px Consolas,monospace;color:var(--m)}
+.qa-banner a{color:var(--blue);text-decoration:none}
+.qa-banner a:hover{text-decoration:underline}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--n2);border:3px solid var(--b);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.label{font:800 15px Consolas,monospace;color:var(--orange)}
+input[type=text]{background:var(--d);border:2px solid var(--b);border-radius:8px;padding:8px 12px;color:#fff;font:700 15px Consolas,monospace;outline:none;width:100%}
+input:focus{border-color:var(--blue)}
+button{font:800 13px Consolas,monospace;border:0;border-radius:6px;padding:8px 14px;color:#fff;background:#167fc9;cursor:pointer}
+button:hover{background:#1b91e3}
+a{color:var(--blue)}
+.count{font:700 14px Consolas,monospace;color:var(--m)}
+</style>
+</head>
+<body>
+  <div class="w">
+    <div class="bar">
+      <i class="dot r"></i><i class="dot o"></i><i class="dot g"></i>
+      <span class="fn">locators-page.html</span>
+    </div>
+    <div class="ct">
+      <div class="tag">LOCATOR FIXTURE</div>
+      <h1 id="heading">Locator Strategies Fixture</h1>
+
+      <div class="qa-banner">
+        Built with the playwright-key-word-driven framework
+        <p>Watch tutorials and learn how to use it at <a href="https://qa-prep.com" target="_blank" rel="noopener">qa-prep.com</a></p>
+      </div>
+
+      <div class="cols">
+        <section class="card">
+          <div class="label">TEXT / ID / CSS / CLASS</div>
+          <!-- shared-target carries both an id and a class, so id:/css:/
+               cssSelector:/class:/className: can all point at the exact
+               same node - they're interchangeable CSS-based strategies. -->
+          <div id="shared-target" class="shared-target-class">Shared target content</div>
+          <p id="text-target">Unique fixture sentence for text locator</p>
+        </section>
+
+        <section class="card">
+          <div class="label">XPATH</div>
+          <h3 id="xpath-target">XPath heading target</h3>
+        </section>
+
+        <section class="card">
+          <div class="label">NAME / PLACEHOLDER / ARIA LABEL</div>
+          <input type="text" name="name-target" value="name value" readonly>
+          <input type="text" placeholder="Placeholder target text">
+          <input type="text" aria-label="Aria label target">
+        </section>
+
+        <section class="card">
+          <div class="label">TAG NAME / DATA-TEST-ID</div>
+          <!-- the only <footer> on the page, so tagName:footer resolves unambiguously -->
+          <footer id="tagname-target">Footer tag target</footer>
+          <div data-test-id="data-test-id-target">Data test id target content</div>
+        </section>
+
+        <section class="card">
+          <div class="label">LINKS - linkText / partialLinkText / role:link synonyms</div>
+          <!-- text never changes (every synonym below re-matches the same
+               element by this same text) - clicks are counted separately -->
+          <a href="#" id="teams-link">Teams Dashboard</a>
+          <div id="teams-link-count" class="count" data-count="0">clicks: 0</div>
+        </section>
+
+        <section class="card">
+          <div class="label">ARIA ROLES - button / heading+level / checkbox+checked</div>
+          <button id="role-button-target">Role Button Target</button>
+          <h2 id="role-heading-target">Role Heading Target</h2>
+          <label><input type="checkbox" id="role-checkbox-target"> Role Checkbox Target</label>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('teams-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      const el = document.getElementById('teams-link-count');
+      const count = parseInt(el.dataset.count, 10) + 1;
+      el.dataset.count = count;
+      el.textContent = `clicks: ${count}`;
+    });
+  </script>
+</body>
+</html>

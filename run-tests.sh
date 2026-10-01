@@ -283,11 +283,17 @@ discover_phase_numbers() {
 # Runs one phase's already-generated project. Uses the same tags= filter as
 # the main suite (see run_feature() below) - if you pass tags=@ci-test, a
 # pre/post-test phase only runs its scenarios tagged @ci-test too, same as
-# the main suite. An untagged phase feature matches nothing once a tag
-# filter is set, which Playwright reports as "No tests found" and fails the
-# phase - deliberately loud, not a silent skip, since a pre-test being
-# skipped by accident (e.g. the install flow) would break everything
-# downstream in a much more confusing way.
+# the main suite.
+#
+# An untagged phase feature matches nothing once a tag filter is set, and
+# Playwright reports that as "No tests found" with a non-zero exit - exactly
+# the same signal a genuine phase failure gives. Those two are not the same
+# thing: a narrow, feature-specific tag (tags=@team) is EXPECTED to not match
+# a setup phase like install, that's not a failure, it's "this phase has
+# nothing to do for this run". So this distinguishes the two: "No tests
+# found" returns 2 (skip, loudly - still printed, just not fatal) and every
+# other non-zero exit (a real assertion/error failure inside the phase)
+# returns 1 as before and still stops the run. See the two call sites below.
 run_phase() {
   local kind="$1" num="$2"  # kind: pre-test | post-test
   mkdir -p "${REPORT_BASE}/${kind}-${num}"
@@ -302,7 +308,28 @@ run_phase() {
   if [ "$_INSPECTOR" = "true" ]; then
     args+=("--debug")
   fi
-  npx playwright "${args[@]}"
+
+  # tee, not command substitution, so headed/--debug (Playwright Inspector)
+  # still gets a real, live-streamed terminal - command substitution would
+  # buffer everything until the process exits. The `if` is what lets this
+  # pipeline fail without tripping `set -e` (a bare piped statement would
+  # abort the script immediately under pipefail); PIPESTATUS must be read as
+  # the very next statement in the else branch, before any other pipeline
+  # runs, or it gets overwritten.
+  local log_file exit_code
+  log_file=$(mktemp)
+  if npx playwright "${args[@]}" 2>&1 | tee "$log_file"; then
+    exit_code=0
+  else
+    exit_code=${PIPESTATUS[0]}
+  fi
+
+  if [ "$exit_code" -ne 0 ] && grep -q "No tests found" "$log_file"; then
+    rm -f "$log_file"
+    return 2
+  fi
+  rm -f "$log_file"
+  return "$exit_code"
 }
 
 run_feature() {
@@ -316,7 +343,15 @@ run_feature() {
   for num in $(discover_phase_numbers "PRE_TEST_"); do
     echo ""
     echo "=== Running PRE_TEST_${num} ==="
-    if ! run_phase "pre-test" "$num"; then
+    local phase_exit
+    if run_phase "pre-test" "$num"; then
+      phase_exit=0
+    else
+      phase_exit=$?
+    fi
+    if [ "$phase_exit" -eq 2 ]; then
+      echo "PRE_TEST_${num}: no scenarios matched tags=${TAGS_CLEAN:-<none>} - skipping this phase, not a failure." >&2
+    elif [ "$phase_exit" -ne 0 ]; then
       echo "PRE_TEST_${num} failed, stopping before the main suite runs." >&2
       TEST_EXIT_CODE=1
       phase_failed=true
@@ -348,7 +383,15 @@ run_feature() {
   for num in $(discover_phase_numbers "POST_TEST_"); do
     echo ""
     echo "=== Running POST_TEST_${num} ==="
-    if ! run_phase "post-test" "$num"; then
+    local post_phase_exit
+    if run_phase "post-test" "$num"; then
+      post_phase_exit=0
+    else
+      post_phase_exit=$?
+    fi
+    if [ "$post_phase_exit" -eq 2 ]; then
+      echo "POST_TEST_${num}: no scenarios matched tags=${TAGS_CLEAN:-<none>} - skipping this phase, not a failure." >&2
+    elif [ "$post_phase_exit" -ne 0 ]; then
       echo "POST_TEST_${num} failed." >&2
       TEST_EXIT_CODE=1
     fi

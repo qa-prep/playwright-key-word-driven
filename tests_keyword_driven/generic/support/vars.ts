@@ -27,6 +27,7 @@ export const test = base.extend<Fixtures>({
     vars.set('fixturePage', `file://${path.resolve(__dirname, '../fixtures/test-page.html')}`);
     vars.set('fixturePage2', `file://${path.resolve(__dirname, '../fixtures/test-page-2.html')}`);
     vars.set('tabsPage', `file://${path.resolve(__dirname, '../fixtures/tabs-page.html')}`);
+    vars.set('locatorsPage', `file://${path.resolve(__dirname, '../fixtures/locators-page.html')}`);
     await use(vars);
   },
 
@@ -35,7 +36,6 @@ export const test = base.extend<Fixtures>({
   // currently active, checked fresh on every property access.
   page: async ({ page: originalPage, context }, use) => {
     activeTab.page = originalPage;
-
     knownPages.length = 0;
     knownPages.push(originalPage);
     context.on('page', (newPage) => {

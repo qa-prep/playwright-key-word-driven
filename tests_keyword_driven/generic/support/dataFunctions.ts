@@ -39,19 +39,54 @@ function randomLength(rawArg: string): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_RANDOM_LENGTH;
 }
 
-// name -> (resolved, already-unquoted argument, lookupVar) -> result
-const FUNCTIONS: Record<string, (arg: string, lookupVar: (name: string) => string) => string> = {
-  var: (arg, lookupVar) => lookupVar(arg),
-  lower: (arg) => arg.toLowerCase(),
-  upper: (arg) => arg.toUpperCase(),
-  alpha: (arg) => arg.replace(/[^A-Za-z]/g, ''),
-  numeric: (arg) => arg.replace(/[^0-9]/g, ''),
-  alphanumeric: (arg) => arg.replace(/[^A-Za-z0-9]/g, ''),
-  randalpha: (arg) => randomString(ALPHA, randomLength(arg)),
-  randnumeric: (arg) => randomString(NUMERIC, randomLength(arg)),
-  randalphanumeric: (arg) => randomString(ALPHANUMERIC, randomLength(arg)),
-  randhex: (arg) => randomString(HEX, randomLength(arg)),
+// Splits a raw argument span on top-level commas only - i.e. not commas
+// inside a quoted piece, e.g. "'a, b', c" -> ["'a, b'", " c"]. By the time
+// this runs, any nested +func(...) calls have already been resolved to
+// plain text (innermost-first, see evaluateDataFunctions below), so there's
+// no parens to track here, only quotes.
+function splitTopLevelArgs(rawArgs: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let quoteChar: string | null = null;
+  for (const ch of rawArgs) {
+    if (quoteChar) {
+      if (ch === quoteChar) quoteChar = null;
+      current += ch;
+    } else if (ch === "'" || ch === '"') {
+      quoteChar = ch;
+      current += ch;
+    } else if (ch === ',') {
+      parts.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  parts.push(current);
+  return parts;
+}
+
+// name -> (resolved, already-unquoted arguments, lookupVar) -> result.
+// Every function gets an array, even single-arg ones (they just read args[0]) -
+// that's what lets +concat(a, b, c) sit next to +lower(x) without a separate
+// calling convention.
+const FUNCTIONS: Record<string, (args: string[], lookupVar: (name: string) => string) => string> = {
+  var: (args, lookupVar) => lookupVar(args[0]),
+  lower: (args) => args[0].toLowerCase(),
+  upper: (args) => args[0].toUpperCase(),
+  alpha: (args) => args[0].replace(/[^A-Za-z]/g, ''),
+  numeric: (args) => args[0].replace(/[^0-9]/g, ''),
+  alphanumeric: (args) => args[0].replace(/[^A-Za-z0-9]/g, ''),
+  randalpha: (args) => randomString(ALPHA, randomLength(args[0])),
+  randnumeric: (args) => randomString(NUMERIC, randomLength(args[0])),
+  randalphanumeric: (args) => randomString(ALPHANUMERIC, randomLength(args[0])),
+  randhex: (args) => randomString(HEX, randomLength(args[0])),
   uuid: () => randomUUID(),
+  // +concat(a, b, ...) - joins its (already-resolved, unquoted) arguments
+  // with no separator, e.g. +concat(_AUTO_TEAMS_NAME_PREFIX, 1) ->
+  // "AutoGenTeam1". General-purpose on purpose: useful anywhere a test needs
+  // to build a string from a token/var plus a literal, not just for usernames.
+  concat: (args) => args.join(''),
 };
 
 // Finds the first "+name(" in input, then its matching ")" (tracking nested
@@ -95,9 +130,10 @@ export function evaluateDataFunctions(input: string, lookupVar: (name: string) =
     }
     const { start, end, name, argStart, argEnd } = call;
     result += remaining.slice(0, start);
-    const rawArg = evaluateDataFunctions(remaining.slice(argStart, argEnd), lookupVar); // innermost first
+    const rawArgs = evaluateDataFunctions(remaining.slice(argStart, argEnd), lookupVar); // innermost first
     const fn = FUNCTIONS[name];
-    result += fn ? fn(stripQuotes(rawArg), lookupVar) : remaining.slice(start, end);
+    const args = splitTopLevelArgs(rawArgs).map(stripQuotes);
+    result += fn ? fn(args, lookupVar) : remaining.slice(start, end);
     pos += end;
   }
   return result;
