@@ -77,3 +77,12 @@ Feature: Example — set-field priority cascade
     Given I am on "+var(setFieldPage)"
     When I set field "Team Name:" to "test"
     Then I should see field "css:#team_name" is "test"
+
+  @scenarioName.example.setField.getValueIntoVariable
+  Scenario: Read a field's value into a variable, then reuse it
+    Given I am on "+var(setFieldPage)"
+    When I set field "unique-id-target" to "round trip value"
+    And I get field "css:#unique-id-target" value into variable "capturedValue"
+    Then I should see variable "capturedValue" is "round trip value"
+    When I set field "unique-name-target" to "+var(capturedValue)"
+    Then I should see field "css:[name='unique-name-target']" is "round trip value"

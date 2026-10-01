@@ -70,9 +70,13 @@ When('I set the {string} field {string} to {string}', async ({ page, vars }, nth
   await locator.nth(parseInt(nth, 10) - 1).fill(resolveVars(value, vars));
 });
 
-When('I set field {string} to {string} noCheck', async ({ page, vars }, selector, value) => {
-  const locator = await resolveLocator(page, resolveVars(selector, vars));
-  await locator.fill(resolveVars(value, vars)); // Playwright's fill already verifies the value landed; kept for step-text parity
+// When I get field "css:.ds-invite-input" value into variable "inviteLink"
+// Same resolution as "I set field" - useful for reading a readonly/generated
+// value (an invite link, a generated code, etc) so a later step can reuse it
+// via +var(name).
+When('I get field {string} value into variable {string}', async ({ page, vars }, selector, varName) => {
+  const locator = await resolveFieldLocator(page, resolveVars(selector, vars));
+  vars.set(varName, await locator.inputValue());
 });
 
 // For a native <select>, not a custom dropdown component - .fill() throws on

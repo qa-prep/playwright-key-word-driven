@@ -35,15 +35,16 @@ When('I set field {string} to {string}', async ({ page, vars }, selector, value)
   await locator.fill(resolveVars(replacedManual, vars));
 });
 
+
+
+// I set the nth field to a value (1-based index)
+// Example: I set the 2nd field "css:.my-input" to "value"
 When('I set the {string} field {string} to {string}', async ({ page, vars }, nth, selector, value) => {
   const locator = await resolveLocator(page, resolveVars(selector, vars));
   await locator.nth(parseInt(nth, 10) - 1).fill(resolveVars(value, vars));
 });
 
-When('I set field {string} to {string} noCheck', async ({ page, vars }, selector, value) => {
-  const locator = await resolveLocator(page, resolveVars(selector, vars));
-  await locator.fill(resolveVars(value, vars)); // Playwright's fill already verifies the value landed; kept for step-text parity
-});
+
 
 When('I toggle the {string} element {string} attribute {string} to contain {string}', async (
   { page, vars },
