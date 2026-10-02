@@ -28,6 +28,8 @@ Feature: Example — every explicit locator prefix
     Then I should see element "text:Unique fixture sentence for text locator"
     And I should see element "xpath://h3[@id='xpath-target']"
     And I should see element "xpath://h3[@id='xpath-target']" contains text "XPath heading target"
+    # a bare "//..." is auto-detected as xpath, no prefix needed - same target as above
+    And I should see element "//h3[@id='xpath-target']" contains text "XPath heading target"
 
   @scenarioName.example.locators.formFields
   Scenario: name / placeholder / ariaLabel / aria-label

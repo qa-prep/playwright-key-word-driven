@@ -103,6 +103,12 @@ a{color:var(--blue)}
           <div class="label">CHECKBOX - matched by its label text</div>
           <label><input type="checkbox" id="terms-checkbox"> Accept Terms</label>
         </section>
+
+        <section class="card">
+          <div class="label">CLIPBOARD - real navigator.clipboard.writeText(), mirrors the app's Copy button</div>
+          <input type="text" id="copy-source-input" readonly value="https://example.com/invite/abc123">
+          <button id="copy-button">Copy</button>
+        </section>
       </div>
     </div>
   </div>
@@ -122,6 +128,11 @@ a{color:var(--blue)}
     wireCounter('home-link', 'home-link-count');
     wireCounter('add-team-button', 'add-team-button-count');
     wireCounter('status-dropdown', 'status-dropdown-count');
+
+    document.getElementById('copy-button').addEventListener('click', () => {
+      const value = document.getElementById('copy-source-input').value;
+      navigator.clipboard.writeText(value);
+    });
   </script>
 </body>
 </html>

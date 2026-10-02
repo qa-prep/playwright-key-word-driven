@@ -30,6 +30,7 @@ export const test = base.extend<Fixtures>({
     vars.set('locatorsPage', `file://${path.resolve(__dirname, '../fixtures/locators-page.html')}`);
     vars.set('clickByTextPage', `file://${path.resolve(__dirname, '../fixtures/click-by-text-page.html')}`);
     vars.set('setFieldPage', `file://${path.resolve(__dirname, '../fixtures/set-field-page.html')}`);
+    vars.set('collapsePage', `file://${path.resolve(__dirname, '../fixtures/collapse-page.html')}`);
     await use(vars);
   },
 
@@ -43,6 +44,15 @@ export const test = base.extend<Fixtures>({
     context.on('page', (newPage) => {
       knownPages.push(newPage);
     });
+
+    // Granted once per test, up front - a page's own navigator.clipboard.writeText()
+    // call (eg. a real Copy button) needs this permission BEFORE it runs, not
+    // after, or the write silently fails and "I get clipboard into variable"
+    // reads back an empty string. clipboard-read/clipboard-write are
+    // Chromium-only permissions in Playwright; caught and ignored on
+    // firefox/webkit so this doesn't break every test on those browsers -
+    // a clipboard step used there will fail loudly on its own instead.
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
 
     const activePageProxy = new Proxy({}, {
       get(_target, prop) {

@@ -78,6 +78,28 @@ Feature: Example — set-field priority cascade
     When I set field "Team Name:" to "test"
     Then I should see field "css:#team_name" is "test"
 
+  # no for/id, no wrapping - the label is a bare sibling of the input with
+  # nothing linking them except shared DOM proximity. getByLabel() can't
+  # resolve this at all (none of its 3 supported mechanisms apply); this is
+  # what siblingLabelFieldLocator()'s nearest-ancestor walk is for.
+  @scenarioName.example.setField.labelSibling
+  Scenario: label resolves via nearest shared ancestor, no for/id/wrapping at all
+    Given I am on "+var(setFieldPage)"
+    When I set field "Username or Email" to "mybob121"
+    Then I should see field "css:#login-username-field" is "mybob121"
+
+  # Playwright's .fill() throws outright on a checkbox - "I set field" now
+  # detects type="checkbox"/"radio" and uses .setChecked() instead, which is
+  # idempotent (a no-op if already in the wanted state).
+  @scenarioName.example.setField.checkbox
+  Scenario: Checkbox via "to true/false" uses setChecked(), not fill()
+    Given I am on "+var(setFieldPage)"
+    Then I should see element "css:#active-checkbox" is "checked"
+    When I set field "css:#active-checkbox" to "false"
+    Then I should see element "css:#active-checkbox" is "unchecked"
+    When I set field "css:#active-checkbox" to "true"
+    Then I should see element "css:#active-checkbox" is "checked"
+
   @scenarioName.example.setField.getValueIntoVariable
   Scenario: Read a field's value into a variable, then reuse it
     Given I am on "+var(setFieldPage)"

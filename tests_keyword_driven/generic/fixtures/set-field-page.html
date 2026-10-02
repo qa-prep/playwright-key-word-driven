@@ -87,6 +87,21 @@ input:focus{border-color:var(--blue)}
             </dd>
           </dl>
         </section>
+
+        <section class="card">
+          <div class="label">LABEL VIA nearest-ancestor (real login form markup) - label is a bare SIBLING, no for/id, no wrapping at all</div>
+          <div class="ds-form-row">
+            <div class="ds-floating-label ds-input-group">
+              <input type="text" required placeholder=" " id="login-username-field">
+              <label>Username or Email</label>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="label">CHECKBOX via "I set field ... to true/false" - .fill() can't do this, needs .setChecked()</div>
+          <label><input type="checkbox" id="active-checkbox" checked> Active</label>
+        </section>
       </div>
     </div>
   </div>

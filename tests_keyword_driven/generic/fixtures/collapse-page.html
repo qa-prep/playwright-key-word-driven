@@ -1,0 +1,75 @@
+<!-- location: tests_keyword_driven/generic/fixtures/collapse-page.html -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Collapse/Expand Fixture</title>
+<style>
+:root{
+  --n:#071f38;--n2:#082b4b;--d:#04182b;--b:#0a3963;
+  --w:#eef5fb;--m:#b9c9d8;--blue:#22a0ff;--orange:#ffb020;
+  --red:#ff6b6b;--green:#24c47a;
+}
+*{box-sizing:border-box}
+body{background:var(--n);color:var(--w);font-family:Arial,Helvetica,sans-serif;margin:0;padding:0}
+.w{max-width:1100px;margin:30px auto;background:var(--n);border:4px solid var(--b);border-radius:20px;overflow:hidden}
+.bar{height:56px;background:var(--d);border-bottom:4px solid var(--b);padding:0 24px;display:flex;align-items:center;gap:10px}
+.dot{width:14px;height:14px;border-radius:50%}
+.r{background:var(--red)}.o{background:var(--orange)}.g{background:var(--green)}
+.fn{margin-left:14px;color:var(--m);font:700 16px Consolas,monospace}
+.ct{padding:28px 40px;display:flex;flex-direction:column;gap:20px}
+.tag{align-self:flex-start;padding:6px 14px;background:var(--d);border-radius:7px;color:#8fcfff;font:800 14px Consolas,monospace}
+h1{font-size:28px;margin:0}
+.card{background:var(--n2);border:3px solid var(--b);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.label{font:800 15px Consolas,monospace;color:var(--orange)}
+.toggle-group{font:800 13px Consolas,monospace;border:0;border-radius:6px;padding:8px 14px;color:#fff;background:#167fc9;cursor:pointer;width:fit-content}
+.toggle-group:hover{background:#1b91e3}
+.panel{background:var(--d);border:2px solid var(--b);border-radius:8px;padding:10px 14px;margin-top:6px}
+.panel[hidden]{display:none}
+.count{font:700 14px Consolas,monospace;color:var(--m)}
+</style>
+</head>
+<body>
+  <div class="w">
+    <div class="bar">
+      <i class="dot r"></i><i class="dot o"></i><i class="dot g"></i>
+      <span class="fn">collapse-page.html</span>
+    </div>
+    <div class="ct">
+      <div class="tag">COLLAPSE/EXPAND FIXTURE</div>
+      <h1 id="heading">Collapse/Expand Fixture</h1>
+
+      <section class="card">
+        <div class="label">Three independent toggles, mixed starting states - matches a real aria-expanded disclosure button</div>
+
+        <button class="toggle-group" id="toggle-1" aria-expanded="false">Group 1</button>
+        <div class="panel" id="panel-1" hidden>Panel 1 content</div>
+        <div id="toggle-1-count" class="count" data-count="0">clicks: 0</div>
+
+        <button class="toggle-group" id="toggle-2" aria-expanded="true">Group 2</button>
+        <div class="panel" id="panel-2">Panel 2 content</div>
+        <div id="toggle-2-count" class="count" data-count="0">clicks: 0</div>
+
+        <button class="toggle-group" id="toggle-3" aria-expanded="false">Group 3</button>
+        <div class="panel" id="panel-3" hidden>Panel 3 content</div>
+        <div id="toggle-3-count" class="count" data-count="0">clicks: 0</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.toggle-group').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const panel = document.getElementById(btn.id.replace('toggle', 'panel'));
+        const countEl = document.getElementById(`${btn.id}-count`);
+        const nowExpanded = btn.getAttribute('aria-expanded') !== 'true';
+        btn.setAttribute('aria-expanded', String(nowExpanded));
+        panel.hidden = !nowExpanded;
+        const count = parseInt(countEl.dataset.count, 10) + 1;
+        countEl.dataset.count = count;
+        countEl.textContent = `clicks: ${count}`;
+      });
+    });
+  </script>
+</body>
+</html>

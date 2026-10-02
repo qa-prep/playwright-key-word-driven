@@ -73,3 +73,31 @@ Feature: Example — click-by-text priority cascade
     Then I should see element "css:#terms-checkbox" is "unchecked"
     When I click "Accept Terms"
     Then I should see element "css:#terms-checkbox" is "checked"
+
+  # "I get clipboard into variable" reads the REAL OS/browser clipboard, not
+  # just the source field's value - proves the actual Copy button writes to
+  # it, which a plain "I get field value" step can't test at all.
+  @scenarioName.example.clickByText.clipboard
+  Scenario: Reading the real clipboard after a Copy button click
+    Given I am on "+var(clickByTextPage)"
+    When I click "Copy"
+    And I get clipboard into variable "copiedValue"
+    Then I should see variable "copiedValue" is "https://example.com/invite/abc123"
+
+  # resolveLocator() (used by "I should see element" and most other asserts/
+  # fills - everything except "I click" and "I set field", which have their
+  # own dedicated cascades) gets the same role-based fallback too: link,
+  # button, dropdown, radio, checkbox, each exact then partial - so you can
+  # describe an element by what it looks like on the page, the same way you
+  # already can for "I click", without knowing it's a <button> vs an <a>.
+  @scenarioName.example.clickByText.assertWithoutPrefix
+  Scenario: I should see element also resolves by visible text, no prefix needed
+    Given I am on "+var(clickByTextPage)"
+    # link wins over button on the same exact text, same priority as I click -
+    # only the <a> has an href, so this proves WHICH element matched, not
+    # just that something matching "Submit" exists
+    Then I should see element "Submit" has attribute "href"
+
+    And I should see element "Add New Team" is "enabled"
+    And I should see element "Enterprise Plan" is "unchecked"
+    And I should see element "Accept Terms" is "unchecked"

@@ -60,9 +60,22 @@ When('I click any {string}', async ({ page, vars }, selector) => {
 // Field-only resolution (id/name/label/placeholder/data-test-id, exact
 // before partial) when no explicit prefix is given - see
 // resolveFieldLocator() in locator.ts for the full cascade.
+//
+// Checkbox/radio are special-cased: Playwright's .fill() only works on
+// text-like inputs and throws outright on a checkbox, regardless of what
+// string you pass it. "true"/"1"/"yes"/"checked" (case-insensitive) set it
+// checked, anything else unchecks it - via .setChecked(), which is already
+// idempotent (a no-op if the box is already in the wanted state).
 When('I set field {string} to {string}', async ({ page, vars }, selector, value) => {
   const locator = await resolveFieldLocator(page, resolveVars(selector, vars));
-  await locator.fill(resolveVars(value, vars));
+  const resolvedValue = resolveVars(value, vars);
+  const inputType = await locator.getAttribute('type').catch(() => null);
+  if (inputType === 'checkbox' || inputType === 'radio') {
+    const truthy = ['true', '1', 'yes', 'checked'].includes(resolvedValue.toLowerCase());
+    await locator.setChecked(truthy);
+  } else {
+    await locator.fill(resolvedValue);
+  }
 });
 
 When('I set the {string} field {string} to {string}', async ({ page, vars }, nth, selector, value) => {
@@ -77,6 +90,19 @@ When('I set the {string} field {string} to {string}', async ({ page, vars }, nth
 When('I get field {string} value into variable {string}', async ({ page, vars }, selector, varName) => {
   const locator = await resolveFieldLocator(page, resolveVars(selector, vars));
   vars.set(varName, await locator.inputValue());
+});
+
+// When I get clipboard into variable "inviteLink"
+// Reads the REAL OS/browser clipboard (navigator.clipboard.readText()), for
+// when the thing under test is an actual Copy-button-writes-to-clipboard
+// flow, not just a value sitting in a field. clipboard-read/clipboard-write
+// are Chromium-only permissions in Playwright - this will throw on
+// firefox/webkit, which is expected, not swallowed, since there's nothing
+// sensible to test there.
+When('I get clipboard into variable {string}', async ({ page, context, vars }, varName) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const text = await page.evaluate(() => navigator.clipboard.readText());
+  vars.set(varName, text);
 });
 
 // For a native <select>, not a custom dropdown component - .fill() throws on
@@ -133,4 +159,41 @@ When('I send keys {string}', async ({ page, vars }, txt) => {
 When('I press key {string}', async ({ page }, key) => {
   // Playwright key names differ from Selenium's Keys enum (e.g. "Escape" not "_ESCAPE") — map at the feature-file level
   await page.keyboard.press(key);
+});
+
+// Idempotent expand/collapse for a standard ARIA disclosure toggle
+// (aria-expanded="true"/"false" on the clickable element itself, eg a
+// <button class="ds-collapse-toggle" aria-expanded="...">). Only clicks if
+// the element isn't already in the wanted state - safe to call regardless
+// of current state, which is the whole point: you never have to know/assert
+// what state a collapsible was left in by a previous step.
+//
+// No-nth form acts on EVERY matching element (eg. "expand every options
+// group on this page" in one step); the nth form targets just one.
+async function setExpanded(page: any, vars: Map<string, string>, selector: string, wantExpanded: boolean, nth?: string) {
+  const locator = await resolveLocator(page, resolveVars(selector, vars));
+  const indices = nth !== undefined ? [parseInt(nth, 10) - 1] : [...Array(await locator.count()).keys()];
+  for (const i of indices) {
+    const el = locator.nth(i);
+    const isExpanded = (await el.getAttribute('aria-expanded')) === 'true';
+    if (isExpanded !== wantExpanded) {
+      await el.click();
+    }
+  }
+}
+
+When('I expand {string}', async ({ page, vars }, selector) => {
+  await setExpanded(page, vars, selector, true);
+});
+
+When('I collapse {string}', async ({ page, vars }, selector) => {
+  await setExpanded(page, vars, selector, false);
+});
+
+When('I expand the {string} {string}', async ({ page, vars }, nth, selector) => {
+  await setExpanded(page, vars, selector, true, nth);
+});
+
+When('I collapse the {string} {string}', async ({ page, vars }, nth, selector) => {
+  await setExpanded(page, vars, selector, false, nth);
 });
