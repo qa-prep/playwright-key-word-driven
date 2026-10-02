@@ -54,6 +54,17 @@ h1{font-size:28px;margin:0}
         <div class="panel" id="panel-3" hidden>Panel 3 content</div>
         <div id="toggle-3-count" class="count" data-count="0">clicks: 0</div>
       </section>
+
+      <section class="card">
+        <div class="label">Button disabled for 1s then auto-enables - the real "don't click Register before it's ready" race</div>
+        <button id="delayed-button" disabled>Submit</button>
+      </section>
+
+      <section class="card" style="position:relative;">
+        <div class="label">Button covered by an overlay for 1s then uncovered - clickable/obscured</div>
+        <button id="covered-button">Covered</button>
+        <div id="covering-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.1);"></div>
+      </section>
     </div>
   </div>
 
@@ -70,6 +81,14 @@ h1{font-size:28px;margin:0}
         countEl.textContent = `clicks: ${count}`;
       });
     });
+
+    setTimeout(() => {
+      document.getElementById('delayed-button').disabled = false;
+    }, 1000);
+
+    setTimeout(() => {
+      document.getElementById('covering-overlay').remove();
+    }, 1000);
   </script>
 </body>
 </html>

@@ -101,3 +101,13 @@ Feature: Example — click-by-text priority cascade
     And I should see element "Add New Team" is "enabled"
     And I should see element "Enterprise Plan" is "unchecked"
     And I should see element "Accept Terms" is "unchecked"
+
+  # "I wait for element X is Y" (waits.steps.ts) uses the exact same
+  # resolveLocator() cascade as "I should see element" / "I click" - no
+  # prefix needed, same link-beats-button priority applies.
+  @scenarioName.example.clickByText.waitWithoutPrefix
+  Scenario: I wait for element also resolves by visible text, no prefix needed
+    Given I am on "+var(clickByTextPage)"
+    When I wait for element "Submit" is "visible"
+    And I wait for element "Add New Team" is "enabled"
+    Then I should see element "Add New Team" is "enabled"

@@ -61,3 +61,30 @@ Feature: Example — idempotent expand/collapse
     When I collapse the "2nd" "class:toggle-group"
     Then I should see element "css:#toggle-2" attribute "aria-expanded" is "false"
     And I should see element "css:#toggle-1" attribute "aria-expanded" is "true"
+
+  # "I wait for element X is Y" never fails (same as every other wait in this
+  # file) - it just polls up to 5s and returns as soon as the status is
+  # reached, so a step right after (like "I click") doesn't race a button
+  # that's still disabled. Negation is baked into the status word itself
+  # (disabled, not "not enabled").
+  @scenarioName.example.waitForStatus
+  Scenario: Waiting for a button to stop being disabled before clicking it
+    Given I am on "+var(collapsePage)"
+    Then I should see element "css:#delayed-button" is "disabled"
+
+    When I wait for element "css:#delayed-button" is "enabled"
+    Then I should see element "css:#delayed-button" is "enabled"
+
+    When I wait for element "css:#delayed-button" is "exists"
+    Then I should see element "css:#delayed-button" is "enabled"
+
+  # "clickable"/"obscured" use a trial click (Playwright's full actionability
+  # check - visible, stable, receives events, enabled), not a single
+  # property, since being coverable by another element isn't one DOM attribute.
+  @scenarioName.example.waitForStatus.obscured
+  Scenario: Waiting for a button to stop being covered by another element
+    Given I am on "+var(collapsePage)"
+    Then I should see element "css:#covering-overlay" is "visible"
+
+    When I wait for element "css:#covered-button" is "clickable"
+    Then I should see element "css:#covering-overlay" is "invisible"

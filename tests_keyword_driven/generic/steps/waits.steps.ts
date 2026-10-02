@@ -8,6 +8,7 @@
 // fail when the condition never becomes true.
 
 import { createBdd } from 'playwright-bdd';
+import type { Page, Locator } from '@playwright/test';
 import { test, resolveVars, expect } from '../support/vars';
 import { resolveLocator } from '../support/locator';
 
@@ -32,6 +33,56 @@ When('I wait for element {string} to not be visible', async ({ page, vars }, sel
   const locator = await resolveLocator(page, resolveVars(selector, vars));
   await locator.first().waitFor({ state: 'hidden' }).catch(() => {});
 });
+
+// Status vocabulary: disabled/enabled/exists/visible/invisible/checked/
+// unchecked/clickable/obscured - negation is baked into the word you pick
+// (eg. "disabled", not "not enabled"), no separate negated step needed.
+// "clickable"/"obscured" use a trial click (Playwright's own actionability
+// checks - visible, stable, receives events, enabled - without actually
+// clicking) rather than a single property check, since "clickable" isn't
+// just one DOM attribute.
+// Polls up to 5s, resolving as soon as the status is reached - never fails,
+// same as every other wait in this file (an unrecognised status just times
+// out quietly rather than asserting - this used to hard-fail in an earlier
+// version of this framework, which defeated the point of it being a wait).
+// Follow with a real "I should see element X is Y" assertion if you need
+// the test to fail when the status never arrives.
+async function checkStatus(locator: Locator, status: string): Promise<boolean> {
+  try {
+    switch (status) {
+      case 'visible': return await locator.isVisible();
+      case 'invisible': return !(await locator.isVisible());
+      case 'enabled': return await locator.isEnabled();
+      case 'disabled': return await locator.isDisabled();
+      case 'checked': return await locator.isChecked();
+      case 'unchecked': return !(await locator.isChecked());
+      case 'exists': return (await locator.count()) > 0;
+      case 'clickable':
+        return await locator.click({ trial: true, timeout: 200 }).then(() => true).catch(() => false);
+      case 'obscured':
+        return await locator.click({ trial: true, timeout: 200 }).then(() => false).catch(() => true);
+      default: return false; // unrecognised status - never satisfied, just times out quietly
+    }
+  } catch {
+    return false;
+  }
+}
+
+async function waitForStatus(page: Page, vars: Map<string, string>, selector: string, status: string) {
+  const locator = (await resolveLocator(page, resolveVars(selector, vars))).first();
+  const start = Date.now();
+  while (Date.now() - start < 5000) {
+    if (await checkStatus(locator, status)) return;
+    await page.waitForTimeout(100);
+  }
+}
+
+
+// When I wait for element "css:button" is "enabled"
+When('I wait for element {string} is {string}', async ({ page, vars }, selector, status) => {
+  await waitForStatus(page, vars, selector, status);
+});
+
 
 // When I wait for element count "1" (exact) or "< 0" / "<0" / "> 0" / ">0"
 // (operator, optional space, number - matches the old syntax). Polls up to 5s,
