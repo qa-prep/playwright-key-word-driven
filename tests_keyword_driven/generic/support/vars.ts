@@ -31,6 +31,7 @@ export const test = base.extend<Fixtures>({
     vars.set('clickByTextPage', `file://${path.resolve(__dirname, '../fixtures/click-by-text-page.html')}`);
     vars.set('setFieldPage', `file://${path.resolve(__dirname, '../fixtures/set-field-page.html')}`);
     vars.set('collapsePage', `file://${path.resolve(__dirname, '../fixtures/collapse-page.html')}`);
+    vars.set('emailDomain', process.env._AUTO_USER_EMAIL_DOMAIN ?? 'example.com');
     await use(vars);
   },
 

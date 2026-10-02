@@ -10,6 +10,14 @@ Given('I set variable {string} to {string}', async ({ vars }, name, value) => {
   vars.set(name, resolveVars(value, vars));
 });
 
+// Given I set variable "teamUrl" to URL
+// Captures the CURRENT page url (eg. right after "Then I should see url
+// contains..." confirms you've landed somewhere dynamic, like a newly
+// created team's own page) so a later step can navigate back to it.
+Given('I set variable {string} to URL', async ({ page, vars }, name) => {
+  vars.set(name, page.url());
+});
+
 // goes through the backend's own tiered cleanup (moderation queue, team
 // ownership, personal tables, etc), not just a direct delete on ds_core_users.
 // for a direct-query example instead of the api, see db/entities/users.ts

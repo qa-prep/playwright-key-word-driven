@@ -3,6 +3,19 @@ import { Page, Locator } from '@playwright/test';
 
 type CandidateFn = (value: string) => Locator;
 
+// getByLabel() matches by properly-linked for/id (or aria-labelledby)
+// association, not DOM position, so it doesn't care whether the match is
+// on screen right now - on a page that keeps more than one same-labelled
+// field mounted at once (eg. several tabs kept mounted via v-show instead
+// of v-if, each with their own "Password" field), it happily returns BOTH
+// and fails with a strict-mode violation. .and() intersects two locators'
+// matched element sets (unlike .or(), which just unions in DOM order and
+// so can't express "prefer visible"), so this narrows down to whichever
+// of those matches is actually visible.
+function visibleGetByLabel(page: Page, text: string, exact: boolean): Locator {
+  return page.getByLabel(text, { exact }).and(page.locator(':visible'));
+}
+
 // role:<roleType>:<name>[,<option>:<value>...], e.g.
 //   role:link:Teams
 //   role:link:Teams,exact:true
@@ -87,10 +100,21 @@ async function candidateExists(locator: Locator): Promise<boolean> {
 // field within it. Covers both a one-level sibling wrapper (like the one
 // above) and a deeper one (eg. a label and its field in separate child divs
 // under one shared row) without needing to know the wrapper's class name.
+// Only matches a VISIBLE field: the same label/field pair can legitimately
+// exist more than once in the DOM at once (eg. several tabs kept mounted
+// via v-show instead of v-if, each with their own "Username" field) - .or()
+// can't express "prefer visible, fall back to hidden" since it unions in
+// DOM order regardless of which side matched, so this candidate simply
+// doesn't match at all when the only hits are hidden. That's fine: the
+// cascade this feeds into (fieldCandidates/fallbackCandidates) already
+// tries other candidate types next, then retries over time, so a page
+// with only ONE (hidden) match still resolves it once something else
+// finds it or the field becomes visible - this candidate just stops
+// grabbing the WRONG one when a visible sibling also exists.
 function siblingLabelFieldLocator(page: Page, text: string, exact: boolean): Locator {
   const label = page.getByText(text, { exact }).locator('xpath=ancestor-or-self::label[1]');
   const container = label.locator('xpath=ancestor::*[.//input or .//textarea or .//select][1]');
-  return container.locator('input, textarea, select').first();
+  return container.locator('input:visible, textarea:visible, select:visible').first();
 }
 
 // select option (native dropdown) or a styled trigger - [role=combobox],
@@ -127,7 +151,7 @@ function fallbackCandidates(page: Page, text: string, exact: boolean): Locator[]
       page.locator(`#${text}`),
       page.locator(`[name="${text}"]`),
       page.locator(`.${text}`),
-      page.getByLabel(text, { exact: true }),
+      visibleGetByLabel(page, text, true),
       siblingLabelFieldLocator(page, text, true),
       page.getByPlaceholder(text, { exact: true }),
       page.getByRole('link', { name: text, exact: true }),
@@ -144,7 +168,7 @@ function fallbackCandidates(page: Page, text: string, exact: boolean): Locator[]
     page.locator(`[id*=${quoted} i]`),
     page.locator(`[name*=${quoted} i]`),
     page.locator(`[class*=${quoted} i]`),
-    page.getByLabel(text),
+    visibleGetByLabel(page, text, false),
     siblingLabelFieldLocator(page, text, false),
     page.getByPlaceholder(text),
     page.getByRole('link', { name: text }),
@@ -288,7 +312,7 @@ function fieldCandidates(page: Page, text: string, exact: boolean): Locator[] {
     return [
       page.locator(`#${text}`),
       page.locator(`[name="${text}"]`),
-      page.getByLabel(text, { exact: true }),
+      visibleGetByLabel(page, text, true),
       siblingLabelFieldLocator(page, text, true),
       page.getByPlaceholder(text, { exact: true }),
       page.locator(`[data-test-id="${text}"]`),
@@ -298,7 +322,7 @@ function fieldCandidates(page: Page, text: string, exact: boolean): Locator[] {
   return [
     page.locator(`[id*=${quoted} i]`),
     page.locator(`[name*=${quoted} i]`),
-    page.getByLabel(text),
+    visibleGetByLabel(page, text, false),
     siblingLabelFieldLocator(page, text, false),
     page.getByPlaceholder(text),
     page.locator(`[data-test-id*=${quoted} i]`),
