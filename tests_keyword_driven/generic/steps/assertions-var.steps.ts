@@ -14,3 +14,13 @@ Then('I should see variable {string} is {string}', async ({ vars }, name, expect
 Then('I should see variable {string} contains {string}', async ({ vars }, name, expected) => {
   expect(vars.get(name) ?? '').toContain(resolveVars(expected, vars));
 });
+
+// Then I should not see variable "loginResponse" is "error"
+Then('I should not see variable {string} is {string}', async ({ vars }, name, expected) => {
+  expect(vars.get(name)).not.toBe(resolveVars(expected, vars));
+});
+
+// Then I should not see variable "loginResponse" contains "error"
+Then('I should not see variable {string} contains {string}', async ({ vars }, name, expected) => {
+  expect(vars.get(name) ?? '').not.toContain(resolveVars(expected, vars));
+});

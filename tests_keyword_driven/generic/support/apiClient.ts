@@ -32,13 +32,23 @@ export async function callTemplate(
 // called once; the context keeps any cookies the response sets, so later
 // templates are authenticated automatically. No login template means an
 // unauthenticated context, which is fine for public APIs.
+//
+// auth/login.curl takes +var(login)/+var(password) rather than hardcoding
+// an account, same as auth/register.curl takes +var(username) etc - this
+// just happens to always log in as the automation account, since that's
+// the one every other test-automation template needs an authenticated
+// context for. Call the template directly with different credentials for
+// anything else (eg. a super admin session).
 export async function getAutomationApiContext(): Promise<APIRequestContext> {
   if (cachedContext) return cachedContext;
 
   const context = await playwrightRequest.newContext();
 
   if (curlTemplateExists('auth/login')) {
-    const loginResponse = await callTemplate(context, 'auth/login', {});
+    const loginResponse = await callTemplate(context, 'auth/login', {
+      login: process.env._AUTOMATION_API_USERNAME1 ?? '',
+      password: process.env._AUTOMATION_API_PASSWORD1 ?? '',
+    });
     if (!loginResponse.ok()) {
       const body = await loginResponse.text();
       await context.dispose();

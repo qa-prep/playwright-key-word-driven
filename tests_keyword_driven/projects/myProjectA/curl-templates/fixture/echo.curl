@@ -1,0 +1,11 @@
+# location: tests_keyword_driven/projects/myProjectA/curl-templates/fixture/echo.curl
+# Hits the local fixture server (fixtures/api-fixture-server.js), started
+# automatically by playwright.config.ts's webServer option. +var(username)
+# and +var(message) are supplied by whatever test calls this template - see
+# "I call curl template" in curl.steps.ts, which passes every variable
+# currently set in the test, not just these two.
+
+curl --url 'http://localhost:4100/echo' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data-raw '{"username":"+var(username)","message":"+var(message)"}'
