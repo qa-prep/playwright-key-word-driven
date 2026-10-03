@@ -1,4 +1,4 @@
-// location: tests_keyword_driven/steps/generic/navigation.steps.ts
+// location: tests_keyword_driven/generic/steps/navigation.steps.ts
 // go to, page refresh, browser back/forward
 
 import { createBdd } from 'playwright-bdd';

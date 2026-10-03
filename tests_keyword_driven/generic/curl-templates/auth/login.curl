@@ -1,7 +1,11 @@
 # location: tests_keyword_driven/generic/curl-templates/auth/login.curl
-# _API_URL _AUTOMATION_API_USERNAME1  _AUTOMATION_API_PASSWORD1  will be defined in your env file
+# _API_URL will be defined in your env file. +var(login) +var(password) are
+# supplied by whatever caller uses this template - getAutomationApiContext()
+# passes the automation account's credentials, but any login/password can be
+# used (e.g. a super admin session for something the automation account
+# can't do).
 
 curl --url '_API_URL/login' \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
-  --data-raw '{"login":"_AUTOMATION_API_USERNAME1","password":"_AUTOMATION_API_PASSWORD1","remember":false}'
+  --data-raw '{"login":"+var(login)","password":"+var(password)","remember":false}'

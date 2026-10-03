@@ -62,3 +62,22 @@ export async function getAutomationApiContext(): Promise<APIRequestContext> {
   cachedContext = context;
   return cachedContext;
 }
+
+// Ad-hoc, ONE-SHOT context authenticated as whichever user actually has the
+// permission a call needs (a moderator, a team owner, etc), instead of
+// getAutomationApiContext()'s single cached automation-account session.
+// This is the alternative to adding another test-only backend endpoint
+// every time a different permission is needed - the real endpoint already
+// exists, it just needs to be called as a user who's actually allowed to
+// call it. Not cached: the caller must dispose() it when done, same as any
+// context it created itself.
+export async function getApiContextAs(login: string, password: string): Promise<APIRequestContext> {
+  const context = await playwrightRequest.newContext();
+  const loginResponse = await callTemplate(context, 'auth/login', { login, password });
+  if (!loginResponse.ok()) {
+    const body = await loginResponse.text();
+    await context.dispose();
+    throw new Error(`getApiContextAs: login failed for "${login}": ${loginResponse.status()} ${body}`);
+  }
+  return context;
+}

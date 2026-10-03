@@ -77,3 +77,36 @@ export { expect };
 export function resolveVars(input: string, vars: Map<string, string>): string {
   return resolveTokens(input, (key) => vars.get(key) ?? '');
 }
+
+// "I should see variable "teamSaveResponse.success" is "true"" - a dotted
+// name that was never literally vars.set() (eg. a curl step only sets
+// "<varName>" and "<varName>.status", not every field in the response)
+// falls back to parsing the base variable as JSON and walking the rest of
+// the dots as a field path into it, same traversal as "I set variable ...
+// from field ... of variable ..." in data.steps.ts. A literal var with this
+// exact dotted name (like the "<varName>.status" convention above) always
+// wins over the JSON-path fallback, so existing explicit ".status" vars
+// behave exactly as before.
+export function resolveVarField(vars: Map<string, string>, name: string): string | undefined {
+  const direct = vars.get(name);
+  if (direct !== undefined) return direct;
+
+  const dotIndex = name.indexOf('.');
+  if (dotIndex === -1) return undefined;
+
+  const raw = vars.get(name.slice(0, dotIndex));
+  if (raw === undefined) return undefined;
+
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+  for (const key of name.slice(dotIndex + 1).split('.')) {
+    if (value === null || typeof value !== 'object') return undefined;
+    value = (value as Record<string, unknown>)[key];
+  }
+  if (value === undefined) return undefined;
+  return typeof value === 'string' ? value : JSON.stringify(value);
+}

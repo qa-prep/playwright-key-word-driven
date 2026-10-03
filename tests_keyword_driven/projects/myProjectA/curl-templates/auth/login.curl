@@ -1,0 +1,11 @@
+# location: tests_keyword_driven/projects/myProjectA/curl-templates/auth/login.curl
+# Hits the local fixture server (fixtures/api-fixture-server.js). +var(login)
+# and +var(password) are supplied by whoever calls this - getAutomationApiContext()
+# passes _AUTOMATION_API_USERNAME1/_AUTOMATION_API_PASSWORD1 by default (see
+# apiClient.ts), but "I curl template ... as user ... and pass ..." can
+# pass any other login/password to this same template.
+
+curl --url 'http://localhost:4100/login' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data-raw '{"login":"+var(login)","password":"+var(password)"}'

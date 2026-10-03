@@ -1,4 +1,4 @@
-// location: tests_keyword_driven/steps/generic/assertions-url.steps.ts
+// location: tests_keyword_driven/generic/steps/assertions-url.steps.ts
 // url is/contains/ends with
 
 import { createBdd } from 'playwright-bdd';

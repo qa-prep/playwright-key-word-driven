@@ -81,7 +81,18 @@ AfterStep(async ({ $step }) => {
   const error = ($step as any)?.error as Error | undefined;
   if (error) {
     console.log(`  ${RED}✘ FAILED: ${$step.title}${RESET}`);
-    console.log(`  ${RED}${error.message.split('\n')[0]}${RESET}`);
+    const lines = error.message.split('\n');
+    console.log(`  ${RED}${lines[0]}${RESET}`);
+    // expect()'s own failure detail - "Expected: ..." / "Received: ..." (or
+    // "Expected substring:" / "Received string:" for toContain, etc) - lives
+    // on later lines of the same message, right after the summary line
+    // above. Printing only lines[0] (as this used to) threw away the one
+    // thing you actually need to debug a failure: what the value WAS.
+    for (const line of lines) {
+      if (/^(Expected|Received)/.test(line.trim())) {
+        console.log(`  ${RED}${line.trim()}${RESET}`);
+      }
+    }
   }
 });
 

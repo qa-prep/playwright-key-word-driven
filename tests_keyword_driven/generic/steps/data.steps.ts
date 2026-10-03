@@ -1,5 +1,4 @@
-// location: tests_keyword_driven/steps/generic/data.steps.ts
-
+// location: tests_keyword_driven/generic/steps/data.steps.ts
 import { createBdd } from 'playwright-bdd';
 import { test, resolveVars } from '../support/vars';
 import { testAutomationApi } from '../support/testAutomationApi';
@@ -17,6 +16,37 @@ Given('I set variable {string} to {string}', async ({ vars }, name, value) => {
 Given('I set variable {string} to URL', async ({ page, vars }, name) => {
   vars.set(name, page.url());
 });
+
+// Given I set variable "teamId" from field "data.team_id" of variable "teamSaveResponse"
+// Pulls one value out of a captured JSON API response (eg. from "I call
+// curl template ... into variable ...") via a dot-separated path, for when
+// a LATER call only needs one field (an id) out of a bigger response, not
+// the whole thing - chaining "create X" -> "approve X" -> "use X" across
+// separate curl calls.
+Given(
+  'I set variable {string} from field {string} of variable {string}',
+  async ({ vars }, name, fieldPath, sourceVarName) => {
+    const raw = vars.get(sourceVarName);
+    if (raw === undefined) {
+      throw new Error(`I set variable ... from field: variable "${sourceVarName}" is not set`);
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error(`I set variable ... from field: variable "${sourceVarName}" is not valid JSON: ${raw}`);
+    }
+    let value: unknown = parsed;
+    for (const key of fieldPath.split('.')) {
+      if (value === null || typeof value !== 'object') { value = undefined; break; }
+      value = (value as Record<string, unknown>)[key];
+    }
+    if (value === undefined) {
+      throw new Error(`I set variable ... from field: path "${fieldPath}" not found in variable "${sourceVarName}" (${raw})`);
+    }
+    vars.set(name, typeof value === 'string' ? value : JSON.stringify(value));
+  },
+);
 
 // goes through the backend's own tiered cleanup (moderation queue, team
 // ownership, personal tables, etc), not just a direct delete on ds_core_users.

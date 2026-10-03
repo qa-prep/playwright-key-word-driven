@@ -1,4 +1,4 @@
-// location: tests_keyword_driven/steps/generic/waits.steps.ts
+// location: tests_keyword_driven/generic/steps/waits.steps.ts
 //
 // Waits are best-effort and never fail the test on timeout - only an
 // assertion ("I should see...") should fail. If a wait times out, the test

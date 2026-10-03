@@ -1,0 +1,6 @@
+# location: tests_keyword_driven/projects/myProjectA/curl-templates/fixture/whoami.curl
+# Reads back whichever session cookie auth/login.curl set on this context -
+# "guest" if nothing logged in on this particular context yet.
+
+curl --url 'http://localhost:4100/whoami' \
+  -H 'Accept: application/json'

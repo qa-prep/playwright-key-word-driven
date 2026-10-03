@@ -1,4 +1,4 @@
-// location: same folder as waits.steps.ts, output.steps.ts
+// location: tests_keyword_driven/generic/steps/output.steps.ts
 
 import { createBdd } from 'playwright-bdd';
 import { test, resolveVars } from '../support/vars';

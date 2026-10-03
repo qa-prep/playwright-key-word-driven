@@ -1,4 +1,4 @@
-// location: tests_keyword_driven/steps/generic/assertions-visibility.steps.ts
+// location: tests_keyword_driven/generic/steps/assertions-visibility.steps.ts
 
 import { createBdd } from 'playwright-bdd';
 import { test, expect, resolveVars } from '../support/vars';

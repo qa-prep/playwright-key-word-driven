@@ -1,4 +1,4 @@
-// location: tests_keyword_driven/steps/generic/interaction.steps.ts
+// location: tests_keyword_driven/generic/steps/interaction.steps.ts
 
 import { createBdd } from 'playwright-bdd';
 import { test, resolveVars } from '../support/vars';
