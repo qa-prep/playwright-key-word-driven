@@ -150,6 +150,27 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 2.9. Lay down config/ci.env from canonical, same rule as the other config
+#      files: only if missing, never touched again. This is the file the
+#      REAL CI run builds for itself from pipeline secrets (see
+#      .github/workflows/tests.yml) - laying down a local copy here just
+#      gives you a template with placeholder credentials to fill in for
+#      testing against env=ci locally, same shape as what CI generates.
+# ---------------------------------------------------------------------------
+if [ -f "$CANONICAL_DIR/ci.env" ]; then
+  if [ -f "config/ci.env" ]; then
+    echo "-> config/ci.env already exists, skipping"
+  else
+    echo "-> Copying framework's config/ci.env template into place"
+    mkdir -p config
+    cp "$CANONICAL_DIR/ci.env" config/ci.env
+    echo "-> Edit config/ci.env with your real CI credentials to test against env=ci locally"
+  fi
+else
+  echo "!! No canonical ci.env found in $CANONICAL_DIR — nothing to apply"
+fi
+
+# ---------------------------------------------------------------------------
 # 3. Core dependencies
 # ---------------------------------------------------------------------------
 install_if_missing() {
