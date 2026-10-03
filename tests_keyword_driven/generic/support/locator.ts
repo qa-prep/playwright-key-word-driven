@@ -256,14 +256,22 @@ function dropdownLookalike(page: Page, text: string, exact: boolean): Locator {
     .or(page.locator(`[aria-haspopup]${textMatch}`));
 }
 
-async function clickCandidates(page: Page, text: string, exact: boolean): Promise<ClickTarget[]> {
-  const dropdownOption = await findNativeSelectOption(page, text, exact);
+function clickCandidates(page: Page, text: string, exact: boolean, dropdownOption: ClickTarget | null): ClickTarget[] {
   return [
     { locator: page.getByRole('link', { name: text, exact }) },
     { locator: page.getByRole('button', { name: text, exact }) },
     ...(dropdownOption ? [dropdownOption] : [{ locator: dropdownLookalike(page, text, exact) }]),
     { locator: page.getByRole('radio', { name: text, exact }) },
     { locator: page.getByRole('checkbox', { name: text, exact }) },
+    // Last resort WITHIN this pass, not just after the whole retry budget
+    // is exhausted - a row/card that's only clickable via a JS handler on
+    // some non-interactive element (eg. a <span> in a table row) never
+    // matches any role above, so without this it always burned the full
+    // retry window before ever trying a plain text match, even though
+    // nothing was ever going to make it match a role. Still ordered last,
+    // so a real link/button with the same visible text always wins over
+    // this when both exist in the same pass.
+    { locator: page.getByText(text, { exact }) },
   ];
 }
 
@@ -280,7 +288,8 @@ export async function resolveClickTarget(
 
   while (Date.now() - start < timeoutMs) {
     for (const exact of [true, false]) { // every type exact, THEN every type partial
-      for (const candidate of await clickCandidates(page, rawSelector, exact)) {
+      const dropdownOption = await findNativeSelectOption(page, rawSelector, exact);
+      for (const candidate of clickCandidates(page, rawSelector, exact, dropdownOption)) {
         if (await candidateExists(candidate.locator)) return candidate;
       }
     }

@@ -64,12 +64,40 @@ function resolveTemplateVars(template: string, vars: CurlVars): string {
   });
 }
 
+// A template body only ever uses +var(name) two ways: quoted, as a JSON
+// STRING value (eg. "username":"+var(username)"), or bare, as an
+// already-JSON-shaped value the author built themselves - an array, a
+// number (eg. "team_ids":+var(teamIds), where teamIds is the string
+// "[12]"). Which one applies is visible in the TEMPLATE text itself,
+// before any real value is substituted - a quote immediately on each side
+// of the call, or not. This resolves only the quoted case, JSON-escaping
+// the value first (so a username containing a literal '"' can't break out
+// of its own field), and leaves every bare call untouched for
+// resolveTemplateVars() to substitute exactly as before - escaping those
+// would corrupt the array/number the author deliberately placed there
+// unquoted.
+function substituteJsonStringVars(template: string, vars: CurlVars): string {
+  return template.replace(/"\+var\(([A-Za-z0-9_]+)\)"/g, (_match, varName: string) => {
+    if (!(varName in vars)) {
+      throw new Error(`curl template references +var(${varName}) but no value was provided`);
+    }
+    // JSON.stringify(x) on a string always produces a double-quoted,
+    // correctly-escaped JSON string literal - stripping the outer pair
+    // leaves exactly the escaped inner content this quoted slot needs.
+    const escaped = JSON.stringify(vars[varName]).slice(1, -1);
+    return `"${escaped}"`;
+  });
+}
+
 // Reads the small curl subset our templates use (--url, -X/--request, -H,
-// --data-raw/--data/-d) as plain text, never executes it as shell. That's
-// the whole point: testers can put arbitrary characters in +var() values
-// without shell-quoting risk, the only thing to watch for is a raw `'`
-// landing inside a --data-raw body, which would prematurely close the match
-// below (same as it would break real curl).
+// --data-raw/--data/-d) as plain text, never executes it as shell.
+// Structure (url/headers/body) is extracted BEFORE any +var()/_TOKEN gets
+// substituted, so a value containing a literal `'` can never land in the
+// text these regexes scan - only the template author's own literal syntax
+// can, and template files are hand-written, not test data. See
+// substituteJsonStringVars() above for how a literal `"` inside a quoted
+// body value is handled too; this only protects the `'` that --data-raw
+// '...' itself delimits with.
 export function loadCurlTemplate(templateName: string, vars: CurlVars): ParsedCurlRequest {
   const file = resolveTemplateFile(templateName);
   if (!file) {
@@ -81,24 +109,34 @@ export function loadCurlTemplate(templateName: string, vars: CurlVars): ParsedCu
     );
   }
   const rawTemplate = readFileSync(file, 'utf8');
-  const command = resolveTemplateVars(stripComments(rawTemplate), vars);
+  const stripped = stripComments(rawTemplate);
 
-  const urlMatch = command.match(/--url\s+'([^']*)'/);
+  const urlMatch = stripped.match(/--url\s+'([^']*)'/);
   if (!urlMatch) {
     throw new Error(`curl template "${templateName}" has no --url 'value' line`);
   }
-  const url = urlMatch[1];
+  const urlTemplate = urlMatch[1];
 
-  const methodMatch = command.match(/(?:-X|--request)\s+'?(\w+)'?/);
+  const methodMatch = stripped.match(/(?:-X|--request)\s+'?(\w+)'?/);
+
+  const headerTemplates = [...stripped.matchAll(/-H\s+'([^']*)'/g)].map((m) => m[1]);
+
+  const bodyMatch = stripped.match(/(?:--data-raw|--data|-d)\s+'([^']*)'/);
+  const bodyTemplate = bodyMatch ? bodyMatch[1] : undefined;
+
+  const url = resolveTemplateVars(urlTemplate, vars);
 
   const headers: Record<string, string> = {};
-  for (const headerMatch of command.matchAll(/-H\s+'([^']*)'/g)) {
-    const [key, ...rest] = headerMatch[1].split(':');
+  for (const headerTemplate of headerTemplates) {
+    const resolvedHeader = resolveTemplateVars(headerTemplate, vars);
+    const [key, ...rest] = resolvedHeader.split(':');
     headers[key.trim()] = rest.join(':').trim();
   }
 
-  const bodyMatch = command.match(/(?:--data-raw|--data|-d)\s+'([^']*)'/);
-  const body = bodyMatch ? bodyMatch[1] : undefined;
+  const body =
+    bodyTemplate !== undefined
+      ? resolveTemplateVars(substituteJsonStringVars(bodyTemplate, vars), vars)
+      : undefined;
 
   // Same inference real curl does: presence of a body implies POST.
   const method = methodMatch ? methodMatch[1].toUpperCase() : body ? 'POST' : 'GET';
