@@ -76,13 +76,20 @@ When(
 );
 
 // When I api update table "ds_core_users" column "email_verified_at" where "user_id" is "+var(userId)" to value "2026-09-24 10:00:00"
+//
+// Matches a test-automation update endpoint that expects flat table_key/
+// table_value/update_key/update_value fields, not a nested where/update
+// object - confirmed live against dash-sites-creator's
+// TestAutomationController::update(), which reads these flat fields.
 When(
   'I api update table {string} column {string} where {string} is {string} to value {string}',
   async ({ vars }, tableName, columnToUpdate, whereColumn, whereValue, toValue) => {
     await testAutomationApi.update({
       table_name: resolveVars(tableName, vars),
-      where: { [whereColumn]: resolveVars(whereValue, vars) },
-      update: { [columnToUpdate]: resolveVars(toValue, vars) },
+      table_key: whereColumn,
+      table_value: resolveVars(whereValue, vars),
+      update_key: columnToUpdate,
+      update_value: resolveVars(toValue, vars),
     });
   },
 );
