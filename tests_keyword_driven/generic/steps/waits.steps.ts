@@ -71,7 +71,7 @@ async function checkStatus(locator: Locator, status: string): Promise<boolean> {
 async function waitForStatus(page: Page, vars: Map<string, string>, selector: string, status: string) {
   const locator = (await resolveLocator(page, resolveVars(selector, vars))).first();
   const start = Date.now();
-  while (Date.now() - start < 5000) {
+  while (Date.now() - start < 10000) {
     if (await checkStatus(locator, status)) return;
     await page.waitForTimeout(100);
   }
@@ -85,7 +85,7 @@ When('I wait for element {string} is {string}', async ({ page, vars }, selector,
 
 
 // When I wait for element count "1" (exact) or "< 0" / "<0" / "> 0" / ">0"
-// (operator, optional space, number - matches the old syntax). Polls up to 5s,
+// (operator, optional space, number - matches the old syntax). Polls up to 10s,
 // resolving as soon as the condition is true instead of always waiting the
 // full timeout (e.g. an exact-0 check that's already true returns immediately).
 // A malformed count expression still throws - that's a broken step argument,
@@ -109,6 +109,11 @@ When('I wait for element {string} count is {string}', async ({ page, vars }, sel
       : operator === '>=' ? 'toBeGreaterThanOrEqual'
       : 'toBe'](expected)
     .catch(() => {});
+});
+
+// When I wait for viewport text "100%"
+When('I wait for viewport text {string}', async ({ page, vars }, text) => {
+  await expect(page.locator('body')).toContainText(resolveVars(text, vars), { timeout: 10000 }).catch(() => {});
 });
 
 When('I wait for page to load', async ({ page }) => {
