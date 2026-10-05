@@ -1,27 +1,32 @@
 # location: /README.md
 
+# Playwright Key-Word Driven Pitch
+
+Write a test from a figma diagram / picture, before the product even exists. 
+Let it double as the manual test case. Drop to plain scripts whenever you want the full language instead. 
+And get it installed in about four commands.
+
 # Playwright Key-Word Driven
 
 A keyword-driven Playwright + BDD (Gherkin/Cucumber) test automation framework for E2E, API, and database-backed system testing — built for multi-project reuse.
-
 Want to run these tests automatically in CI/CD (GitHub Actions)? See [CI-CD.md](./CI-CD.md).
 
 ## What a test looks like
 
 ```gherkin
-Scenario: Interacting with and asserting against page elements
-  Given I am on "+var(fixturePage)"
-  Then I should see element "css:#heading"
-  And I should see viewport text "Test Fixture Page"
-
-  When I set field "css:#text-field" to "hello world"
-  Then I should see field "css:#text-field" is "hello world"
-
-  When I click "css:#checkbox-field"
-  Then I should see element "css:#checkbox-field" is "checked"
+  Scenario: A new user successfully registers for an account
+    When I go to "http://localhost/register"
+    And I set field "Username" to "myNameIsBob"
+    And I set field "Email" to "bobsemail@example.com"
+    And I set field "Password" to "bobsInsecurePassword"
+    And I click any "Accept all cookies"
+    And I click "Register"
+    Then I should see viewport text "Welcome"
 ```
 
 No step definitions to write for common interactions like this — `click`, `set field`, `see element`, `see viewport text`, and dozens more ship as a generic step library. You write `.feature` files in plain Gherkin; the framework's stock steps do the rest, and you only write custom step code when a project needs something the generic library doesn't cover.
+
+Because the generic step library already covers most of what a UI does, you can write this scenario straight from a design/Figma mock before a single line of the registration page exists — it's a real acceptance criteria doc a non-technical reviewer can read, not throwaway scaffolding. Once dev builds the page, you don't translate or rewrite anything: the exact same file just starts passing.
 
 ## Why this exists
 
@@ -29,7 +34,7 @@ Playwright handles a lot out of the box, but real system/integration testing —
 
 This framework is built around a few opinions:
 
-- **Keyword-driven, Gherkin-based** steps so tests read like plain English and are approachable to non-technical QA folks, not just engineers.
+- **Keyword-driven, Gherkin-based** steps so tests read like plain English and are approachable to non-technical QA folks, not just engineers — and because they're plain English, they can be written from a spec or a design mock before the feature is built, not just after.
 - **Shared generic steps by default, with per-project overrides** — a project can supply its own version of any generic step file, and it wins automatically (same filename = override), no manual config needed.
 - **Real database access for test setup/teardown**, not just mocking — because full system testing sometimes means asserting against real data, not a stub.
 - **One connection per worker**, not per test — keeps parallel runs fast.
@@ -70,11 +75,11 @@ That's it!
 The installer will:
 - Run `npm init playwright@latest` if no Playwright project exists yet
 - Apply this framework's `playwright.config.ts` (warns before overwriting if you've made local changes)
-- Lay down `config/default-settings.config`, `config/local.env`, and `config/slack-users.json` from the framework's canonical templates, each only if you don't already have one
-- Install required dependencies (`dotenv`, `mysql2`, `playwright-bdd`, `@cucumber/cucumber`)
+- Lay down `config/default-settings.config`, `config/local.env`, `config/slack-users.json`, `config/ci-secrets.json`, and `config/ci.env` from the framework's canonical templates, each only if you don't already have one (the last two are only needed for CI — see [CI-CD.md](./CI-CD.md))
+- Install required dependencies (`dotenv`, `mysql2`, `playwright-bdd`, `@cucumber/cucumber`, plus `typescript` and `@types/node` as dev dependencies)
 - Make `run-tests.sh` executable
 
-All three files under `config/` are yours from that point on — the installer never overwrites any of them on a later run. `config/local.env` is gitignored, so edit it freely with your own DB credentials and Slack token; `config/default-settings.config` is deliberately *not* gitignored (no credentials belong there either) so your preferred defaults can be committed and shared.
+Every file under `config/` is yours from that point on — the installer never overwrites any of them on a later run. `config/local.env` is gitignored, so edit it freely with your own DB credentials and Slack token; `config/default-settings.config` is deliberately *not* gitignored (no credentials belong there either) so your preferred defaults can be committed and shared.
 
 Open `config/local.env` and fill in your database details if you're using the DB helpers — otherwise the defaults are enough to get started:
 
@@ -104,8 +109,10 @@ Behaviour toggles laid down by the installer, overridable per run via CLI flags 
 | `_SPEED` | `fast` \| `medium` \| `slow` \| `vslow` | `fast` |
 | `_SCREENSHOT_ON_FAIL` | `true` \| `false` | `true` |
 | `_SLACK_ENABLED` | `true` \| `false` | `false` |
-| `_SLACK_NOTIFY_MODE` | `never` \| `on-failure` \| `always` | `on-failure` |
+| `_SLACK_NOTIFY_MODE` | `never` \| `on-failure` \| `always` | `always` |
 | `_SLACK_NEVER_IN_DEBUG` | `true` \| `false` | `true` |
+| `_SILENT` | `true` \| `false` — suppress run-tests.sh's own informational output | `false` |
+| `_INSPECTOR` | `true` \| `false` — open Playwright's step-by-step Inspector (forces headed) | `false` |
 | `_APP_URL` / `_API_URL` | any URL | `http://localhost:5173` / `http://localhost/api` |
 
 ## Slack notifications
