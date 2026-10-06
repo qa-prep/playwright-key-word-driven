@@ -1,0 +1,45 @@
+# location: tests_keyword_driven/projects/demo/features/registration.feature
+# ./run-tests.sh env=demo tags=@demoRegister1 debug-mode=all
+# ./run-tests.sh env=demo tags=@demoRegister1 
+# ./run-tests.sh env=demo
+
+@demoRegister1 
+Feature: User registration
+  As a new user
+  I want to register an account
+  So that I can access the application and use its features
+
+
+  Scenario: A new user successfully registers for an account
+
+
+    # For automation, if we re-run this test, we will hit dulicate emails
+    # we could solve this by adding a random id (but we still get a build up and the test is then non-deterministic)
+    # What I suggest is a clean up before the test runs...
+    # We can do this in many different ways, we can either use a general end point on the controller of the appliction (requires dev adding an Automation end point just for testing)
+    # Or if real api endpoint exit in your appication, you can use those 
+
+    # 1) Using an website automatin controller endpoint
+    # This requires an automation endpoint added to the application (useful if you have many users do delete)
+    # Given I clean up user data for email "bobsemail@example.com"
+
+    # 2) Using real curls, if they exist, to delete the users
+    # This uses real delete user api endpoints (you will need to add the curls for these if your appliction can delete users)
+    # This one is a bit more tricky to do in this demo (I can do it for my site, but it's not a general solution for everyone)
+    # My site for example requires a double auth to use the ACP to search for a user id, so that we can then delete a user 
+    # (and this will be confusing to teach and not adaptable to your project)
+
+
+    When I go to "http://localhost:8082/auth?mode=register"
+    And I set field "Username" to "myNameIsBob"
+    And I set field "Email" to "bobsemail@example.com"
+    And I set field "Password" to "bobsInsecurePassword"
+    And I click "Yes"
+    And I click "I confirm I am over 18"
+    And I click "I agree to the"
+    And I click any "Accept all cookies"
+    And I click "role:button:Register"
+    Then I should see viewport text "Welcome"
+
+
+    

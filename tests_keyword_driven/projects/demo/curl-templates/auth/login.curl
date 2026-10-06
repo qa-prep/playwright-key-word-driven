@@ -1,0 +1,10 @@
+# location: tests_keyword_driven/projects/demo/curl-templates/auth/login.curl
+# _API_URL will be defined in your env file. +var(login) +var(password) are
+# supplied by whatever caller uses this template - getApiContextAs()/
+# getAdminApiContextAs() pass whichever account's credentials they were
+# given (e.g. the super admin, for something a regular user can't do).
+
+curl --url '_API_URL/login' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data-raw '{"login":"+var(login)","password":"+var(password)","remember":false}'
