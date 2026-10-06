@@ -1,0 +1,13 @@
+# location: tests_keyword_driven/projects/dash-sites/curl-templates/member/delete.curl
+# _API_URL will be defined in your env file. +var(userId) is supplied by
+# whatever test calls this. Real endpoint
+# (MemberPublicController::flagMemberForDeletion(), addressed via the bare-id
+# DELETE /members/delete/{user_id} route DsEntityClientPage's built-in
+# Delete button also uses) - requires admin or moderator. Call "as user"
+# whoever you want to prove can/can't do this - unlike most other delete
+# templates this one is NOT always called as the super admin, since the
+# whole point of this one is also proving a REGULAR member gets rejected.
+
+curl --url '_API_URL/members/delete/+var(userId)' \
+  -X 'DELETE' \
+  -H 'Accept: application/json'

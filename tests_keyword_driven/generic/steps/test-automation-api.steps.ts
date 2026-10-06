@@ -1,4 +1,4 @@
-// location: tests_keyword_driven/generic/steps/database.steps.ts
+// location: tests_keyword_driven/generic/steps/test-automation-api.steps.ts
 import { createBdd } from 'playwright-bdd';
 import { test, resolveVars } from '../support/vars';
 import { testAutomationApi } from '../support/testAutomationApi';
