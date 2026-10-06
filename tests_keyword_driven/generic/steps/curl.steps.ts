@@ -53,7 +53,7 @@ When(
   },
 );
 
-// Before you can use this, you will need to add your own curl template ie: 
+// Before you can use this, you will need to add your own curl template ie:
 // tests_keyword_driven/projects/<project_name>/curl-templates/auth/register.curl
 // When I curl register "5" users using name prefix "_AUTO_USER_MIKES_NAME_PREFIX" email prefix "_AUTO_USER_MIKES_EMAIL_PREFIX" and pass "_AUTO_USER_MIKES_PASS"
 When(
@@ -89,3 +89,4 @@ When(
     }
   },
 );
+

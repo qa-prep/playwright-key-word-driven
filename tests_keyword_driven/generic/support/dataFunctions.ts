@@ -79,6 +79,7 @@ const FUNCTIONS: Record<string, (args: string[], lookupVar: (name: string) => st
   alphanumeric: (args) => args[0].replace(/[^A-Za-z0-9]/g, ''),
   randalpha: (args) => randomString(ALPHA, randomLength(args[0])),
   randnumeric: (args) => randomString(NUMERIC, randomLength(args[0])),
+  rand: (args) => randomString(NUMERIC, randomLength(args[0])), // same as above (just shorter alias)
   randalphanumeric: (args) => randomString(ALPHANUMERIC, randomLength(args[0])),
   randhex: (args) => randomString(HEX, randomLength(args[0])),
   uuid: () => randomUUID(),
