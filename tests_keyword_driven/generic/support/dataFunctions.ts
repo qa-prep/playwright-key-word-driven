@@ -39,6 +39,56 @@ function randomLength(rawArg: string): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_RANDOM_LENGTH;
 }
 
+// +date()'s first argument - "0" (now), or one or more "+N unit"/"-N unit"
+// spans applied on top of now, e.g. "-1 year -5 days". Units are matched by
+// their singular/plural prefix (year/years, day/days, ...) so either spelling
+// works. No matches at all (including "0" or "") means no offset - just now.
+const DATE_OFFSET_TOKEN_RE = /([+-]?\d+)\s*(years?|months?|weeks?|days?|hours?|minutes?|mins?|seconds?|secs?)/gi;
+
+function applyDateOffset(base: Date, offsetExpr: string): Date {
+  const result = new Date(base.getTime());
+  let match: RegExpExecArray | null;
+  const re = new RegExp(DATE_OFFSET_TOKEN_RE);
+  while ((match = re.exec(offsetExpr))) {
+    const amount = parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+    if (unit.startsWith('year')) result.setFullYear(result.getFullYear() + amount);
+    else if (unit.startsWith('month')) result.setMonth(result.getMonth() + amount);
+    else if (unit.startsWith('week')) result.setDate(result.getDate() + amount * 7);
+    else if (unit.startsWith('day')) result.setDate(result.getDate() + amount);
+    else if (unit.startsWith('hour')) result.setHours(result.getHours() + amount);
+    else if (unit.startsWith('min')) result.setMinutes(result.getMinutes() + amount);
+    else if (unit.startsWith('sec')) result.setSeconds(result.getSeconds() + amount);
+  }
+  return result;
+}
+
+// Java SimpleDateFormat-style pattern letters, the format +date()'s second
+// argument was ported from (see the framework this was lifted from). Only
+// the letters actually needed so far - add more here if a test needs one
+// that isn't yet supported. 'literal text' (Java's own quoting convention -
+// '' means a literal single quote) passes through untouched by design: any
+// character NOT matched by this regex (-, /, :, space, ...) is left exactly
+// as written, since .replace() only ever touches what it matches.
+const JAVA_DATE_PATTERN_RE = /'([^']*)'|yyyy|yy|MM|dd|HH|mm|ss/g;
+
+function formatJavaDate(date: Date, pattern: string): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return pattern.replace(JAVA_DATE_PATTERN_RE, (token, literal) => {
+    if (literal !== undefined) return literal === '' ? "'" : literal;
+    switch (token) {
+      case 'yyyy': return String(date.getFullYear());
+      case 'yy': return pad(date.getFullYear() % 100);
+      case 'MM': return pad(date.getMonth() + 1);
+      case 'dd': return pad(date.getDate());
+      case 'HH': return pad(date.getHours());
+      case 'mm': return pad(date.getMinutes());
+      case 'ss': return pad(date.getSeconds());
+      default: return token;
+    }
+  });
+}
+
 // Splits a raw argument span on top-level commas only - i.e. not commas
 // inside a quoted piece, e.g. "'a, b', c" -> ["'a, b'", " c"]. By the time
 // this runs, any nested +func(...) calls have already been resolved to
@@ -88,6 +138,17 @@ const FUNCTIONS: Record<string, (args: string[], lookupVar: (name: string) => st
   // "AutoGenTeam1". General-purpose on purpose: useful anywhere a test needs
   // to build a string from a token/var plus a literal, not just for usernames.
   concat: (args) => args.join(''),
+  // +date() -> now, yyyy-MM-dd. +date(0) -> same (0 means "no offset").
+  // +date(-1 year -5 days, yyyy-MM-dd HH:mm:ss) -> offset first, formatted
+  // second. Either argument can be omitted - see applyDateOffset()/
+  // formatJavaDate() above for the offset syntax and pattern letters.
+  date: (args) => formatJavaDate(applyDateOffset(new Date(), args[0] ?? ''), args[1] || 'yyyy-MM-dd'),
+  // +unixtimestamp() -> seconds since epoch, right now (matches PHP's
+  // time(), which is what this project's own backend stores timestamp
+  // columns as - not JS's millisecond Date.now()). Takes the same offset
+  // syntax as +date()'s first argument, e.g. +unixtimestamp(-1 day), so the
+  // two stay consistent rather than needing two different offset languages.
+  unixtimestamp: (args) => String(Math.floor(applyDateOffset(new Date(), args[0] ?? '').getTime() / 1000)),
 };
 
 // Finds the first "+name(" in input, then its matching ")" (tracking nested

@@ -1,0 +1,28 @@
+# location: tests_keyword_driven/projects/demo/curl-templates/auth/register.curl
+# _API_URL will be defined in your env file. +var(username) +var(email)
+# +var(password) are supplied by whatever step calls this template.
+#
+# Same endpoint/shape the real app uses (RegisterPublicController::register()),
+# so these test users get everything a real registration produces - consent
+# log rows, personal team, the works - instead of us replicating those side
+# effects by hand. captcha_token/extra_params/remember are all safe to omit:
+# captcha is only enforced when the ds_core_reg_recaptcha_enabled site option
+# is on (off by default on local/origin installs), and remember/extra_params
+# are read but never required.
+#
+# cookie_consent must be a JSON-encoded STRING (not a nested object) matching
+# the site's current cookie policy content_key/internal_version - if that
+# version ever gets bumped, this "internal_version":1 needs bumping to match.
+
+curl --url '_API_URL/register' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data-raw '{
+    "username": "+var(username)",
+    "email": "+var(email)",
+    "password": "+var(password)",
+    "age_confirmed": true,
+    "tos_agreed": true,
+    "is_lead": "1",
+    "cookie_consent": "{\"level\":\"all\",\"content_key\":\"ds_core_cookie_policy\",\"internal_version\":1,\"accepted_at\":+unixtimestamp()}"
+  }'
