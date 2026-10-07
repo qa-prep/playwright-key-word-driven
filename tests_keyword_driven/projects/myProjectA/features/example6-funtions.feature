@@ -33,6 +33,7 @@ Feature: Composable data functions
     When I spit "randalpha(6):          +randalpha(6)"
     And I spit "randalpha() default 10: +randalpha()"
     And I spit "randnumeric(6):         +randnumeric(6)"
+    And I spit "rand(7):                +rand(7)"
     And I spit "randalphanumeric(8):    +randalphanumeric(8)"
     And I spit "randhex(6):             +randhex(6)"
     And I spit "bare uuid:              +uuid"

@@ -3,7 +3,7 @@
 # ./run-tests.sh env=demo tags=@demoRegister1 
 # ./run-tests.sh env=demo
 
-@demoRegister1 
+@demoRegister2
 Feature: User registration
   As a new user
   I want to register an account
@@ -13,7 +13,7 @@ Feature: User registration
   Scenario: A new user successfully registers for an account
 
 
-    # we can use rand to be able to run this test over and over...
+    # we can use rand to enable us to run this test over and over...
     # But that will cause a build up of users, and the tests then become non-deterministic
     # Thats not ideal, it's better if we have a pre ste that clean ups / removed this user ever time we run this test
     # see @demoCleanUpCurl

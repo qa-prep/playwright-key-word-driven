@@ -58,5 +58,34 @@ Feature: Cean up user via curl
     # For this example though, we will query via the database, get the id, 
     # Then if a delete api endpoint exists, delete the user using a  delete curl (you will need to add your own delete curl if a delete endpoint exists)
 
-    # I DO NOT recoment deleting users directly from the database, this will likely cause corrupt data (you dont know what other tables need to be cleaned up)
+    # I DO NOT recomend deleting users directly from the database, this will likely cause corrupt data (you dont know what other tables need to be cleaned up)
     # Instead use real API endpoint that exist on your site
+
+    # before you can run this part, you will need to add to # config/demo.env
+    #_DB_HOST=localhost
+    #_DB_PORT=thePort
+    #_DB_NAME=theDbName
+    #_DB_USER=theDbUser
+    #_DB_PASSWORD=theDbPass
+
+
+    When I db count "ds_core_users" rows where column "email" like "bobsemail@example.com" into variable "likeCount"
+    And I spit "+var(likeCount)"
+
+    When I db count "ds_core_users" rows where column "email" like "bobsemail" into variable "likeCount"
+    And I spit "+var(likeCount)"
+
+    When I db get newest "ds_core_users" column "user_id" where column "email" like "bobsemail" into variable "userId"
+    When I db get newest "ds_core_users" column "username" where column "user_id" is "+var(userId)" into variable "username"
+    When I spit "+var(userId)"
+    When I spit "+var(username)"
+
+    # now that we have the id, delete the user for real via whatever delete endpoint your site already has
+    # You will need to change this, I have only added this as an example:  - demp/curl-templates/member/delete.curl is
+
+    When I curl template "member/delete" as user "_SUPER_ADMIN_USERNAME1" and pass "_SUPER_ADMIN_PASSWORD1" into variable "deleteResponse"
+    Then I should see variable "deleteResponse" contains "flagged for deletion"
+
+    # I also needed a hard delete:
+    # When I curl template "member/hard-delete" as user "_SUPER_ADMIN_USERNAME1" and pass "_SUPER_ADMIN_PASSWORD1" into variable "deleteResponse"
+    # Then I should see variable "deleteResponse" contains "deleted"
