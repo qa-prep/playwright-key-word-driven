@@ -26,22 +26,39 @@ function projectTemplatesRoot(): string {
   return path.resolve(__dirname, '../../projects', project, 'curl-templates');
 }
 
-// Project-specific first, generic as the fallback - first one that exists
-// on disk wins. Returns null if neither does, so callers can throw a
-// message naming both paths they checked, not just fail with ENOENT on
-// whichever one they happened to try.
-function resolveTemplateFile(templateName: string): string | null {
-  const projectPath = path.join(projectTemplatesRoot(), `${templateName}.curl`);
-  if (existsSync(projectPath)) return projectPath;
+// ".curl" is only ASSUMED when templateName has no extension of its own -
+// if the caller already wrote one (.curl, .cmd, whatever), it's used
+// exactly as given, never doubled up (that was the bug: "auth/register.curl"
+// used to resolve to "auth/register.curl.curl"). Extension-less names try
+// "<name>.curl" first (the normal case, matching every existing template),
+// then "<name>" bare as a fallback.
+function candidateFilenames(templateName: string): string[] {
+  const hasExtension = /\.[A-Za-z0-9]+$/.test(path.basename(templateName));
+  if (hasExtension) return [templateName];
+  return [`${templateName}.curl`, templateName];
+}
 
-  const genericPath = path.join(GENERIC_TEMPLATES_ROOT, `${templateName}.curl`);
-  if (existsSync(genericPath)) return genericPath;
+// Project-specific first, generic as the fallback, for each candidate
+// filename in order - first one that exists on disk wins. Returns every
+// path actually checked (not just a guess at what probably got checked),
+// so callers can report exactly where they looked, not just fail with
+// ENOENT on whichever one they happened to try.
+function resolveTemplateFile(templateName: string): { file: string | null; checked: string[] } {
+  const checked: string[] = [];
+  for (const candidate of candidateFilenames(templateName)) {
+    const projectPath = path.join(projectTemplatesRoot(), candidate);
+    checked.push(projectPath);
+    if (existsSync(projectPath)) return { file: projectPath, checked };
 
-  return null;
+    const genericPath = path.join(GENERIC_TEMPLATES_ROOT, candidate);
+    checked.push(genericPath);
+    if (existsSync(genericPath)) return { file: genericPath, checked };
+  }
+  return { file: null, checked };
 }
 
 export function curlTemplateExists(templateName: string): boolean {
-  return resolveTemplateFile(templateName) !== null;
+  return resolveTemplateFile(templateName).file !== null;
 }
 
 // Comment lines (# or //) are dropped before anything else, so a comment can
@@ -99,13 +116,11 @@ function substituteJsonStringVars(template: string, vars: CurlVars): string {
 // body value is handled too; this only protects the `'` that --data-raw
 // '...' itself delimits with.
 export function loadCurlTemplate(templateName: string, vars: CurlVars): ParsedCurlRequest {
-  const file = resolveTemplateFile(templateName);
+  const { file, checked } = resolveTemplateFile(templateName);
   if (!file) {
-    const project = process.env.PROJECT ?? 'default';
     throw new Error(
       `curl template "${templateName}" not found. Checked:\n` +
-        `  tests_keyword_driven/projects/${project}/curl-templates/${templateName}.curl\n` +
-        `  tests_keyword_driven/generic/curl-templates/${templateName}.curl`,
+        checked.map((p) => `  ${p}`).join('\n'),
     );
   }
   const rawTemplate = readFileSync(file, 'utf8');
