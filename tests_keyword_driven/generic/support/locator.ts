@@ -263,14 +263,6 @@ function clickCandidates(page: Page, text: string, exact: boolean, dropdownOptio
     ...(dropdownOption ? [dropdownOption] : [{ locator: dropdownLookalike(page, text, exact) }]),
     { locator: page.getByRole('radio', { name: text, exact }) },
     { locator: page.getByRole('checkbox', { name: text, exact }) },
-    // Last resort WITHIN this pass, not just after the whole retry budget
-    // is exhausted - a row/card that's only clickable via a JS handler on
-    // some non-interactive element (eg. a <span> in a table row) never
-    // matches any role above, so without this it always burned the full
-    // retry window before ever trying a plain text match, even though
-    // nothing was ever going to make it match a role. Still ordered last,
-    // so a real link/button with the same visible text always wins over
-    // this when both exist in the same pass.
     { locator: page.getByText(text, { exact }) },
   ];
 }

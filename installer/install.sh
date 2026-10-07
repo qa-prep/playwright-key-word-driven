@@ -171,6 +171,39 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 2.10. Lay down config/demo-settings.config and config/demo.env from
+#       canonical, same rule as the other config files: only if missing,
+#       never touched again. These point the bundled demo project
+#       (tests_keyword_driven/projects/demo) at a demo app running on
+#       localhost:8082 - see the Pitch at the top of README.md. Run it with
+#       ./run-tests.sh project=demo env=demo once you have something
+#       listening there.
+# ---------------------------------------------------------------------------
+if [ -f "$CANONICAL_DIR/demo-settings.config" ]; then
+  if [ -f "config/demo-settings.config" ]; then
+    echo "-> config/demo-settings.config already exists, skipping"
+  else
+    echo "-> Copying framework's config/demo-settings.config template into place"
+    mkdir -p config
+    cp "$CANONICAL_DIR/demo-settings.config" config/demo-settings.config
+  fi
+else
+  echo "!! No canonical demo-settings.config found in $CANONICAL_DIR — nothing to apply"
+fi
+
+if [ -f "$CANONICAL_DIR/demo.env" ]; then
+  if [ -f "config/demo.env" ]; then
+    echo "-> config/demo.env already exists, skipping"
+  else
+    echo "-> Copying framework's config/demo.env template into place"
+    mkdir -p config
+    cp "$CANONICAL_DIR/demo.env" config/demo.env
+  fi
+else
+  echo "!! No canonical demo.env found in $CANONICAL_DIR — nothing to apply"
+fi
+
+# ---------------------------------------------------------------------------
 # 3. Core dependencies
 # ---------------------------------------------------------------------------
 install_if_missing() {

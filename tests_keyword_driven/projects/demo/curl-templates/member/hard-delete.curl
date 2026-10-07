@@ -1,0 +1,8 @@
+# location: tests_keyword_driven/projects/demo/curl-templates/member/hard-delete.curl
+# _API_URL will be defined in your env file. +var(username)/+var(userId) are supplied by whatever test calls this. Real endpoint
+
+
+curl --url '_API_URL/members/+var(username).+var(userId)/hard-delete' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  --data-raw '{}'

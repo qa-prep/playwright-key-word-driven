@@ -75,7 +75,7 @@ That's it!
 The installer will:
 - Run `npm init playwright@latest` if no Playwright project exists yet
 - Apply this framework's `playwright.config.ts` (warns before overwriting if you've made local changes)
-- Lay down `config/default-settings.config`, `config/local.env`, `config/slack-users.json`, `config/ci-secrets.json`, and `config/ci.env` from the framework's canonical templates, each only if you don't already have one (the last two are only needed for CI — see [CI-CD.md](./CI-CD.md))
+- Lay down `config/default-settings.config`, `config/local.env`, `config/slack-users.json`, `config/ci-secrets.json`, `config/ci.env`, `config/demo-settings.config`, and `config/demo.env` from the framework's canonical templates, each only if you don't already have one (`ci-*` is only needed for CI, see [CI-CD.md](./CI-CD.md); `demo-*` points the bundled `demo` project at `localhost:8082`)
 - Install required dependencies (`dotenv`, `mysql2`, `playwright-bdd`, `@cucumber/cucumber`, plus `typescript` and `@types/node` as dev dependencies)
 - Make `run-tests.sh` executable
 

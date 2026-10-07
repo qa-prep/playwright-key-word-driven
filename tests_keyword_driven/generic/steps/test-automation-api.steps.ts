@@ -63,6 +63,29 @@ When(
   },
 );
 
+// When I api get newest "ds_core_users" column "user_id" where column "email" like "bobsemail@example.com" into variable "userId"
+When(
+  'I api get newest {string} column {string} where column {string} like {string} into variable {string}',
+  async ({ vars }, tableName, colForExtraction, column, value, varName) => {
+    const result = await testAutomationApi.index({
+      table_name: resolveVars(tableName, vars),
+      table_key: column,
+      table_operator: 'LIKE',
+      table_value: `%${resolveVars(value, vars)}%`,
+      order_key: 'updated_at',
+      order_value: 'DESC',
+      limit: 1,
+    });
+    const row = result?.data?.rows?.[0];
+    if (!row || !(colForExtraction in row)) {
+      throw new Error(
+        `No row found (or missing column "${colForExtraction}") for ${tableName} where ${column} like ${value}`,
+      );
+    }
+    vars.set(varName, String(row[colForExtraction]));
+  },
+);
+
 // When I api delete row "ds_core_users" where "email" is "mike+auto@test.com"
 When(
   'I api delete row {string} where {string} is {string}',
