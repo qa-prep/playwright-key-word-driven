@@ -1,6 +1,9 @@
 # location: tests_keyword_driven/projects/myProjectA/features/example.feature
+# ./run-tests.sh project=myProjectA tags=@example1 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example1 
+# ./run-tests.sh project=myProjectA tags=@exampleTests
 
-@featureName.example1-basic @featureArea.keywordTest @exampleTests 
+@featureName.example1-basic @featureArea.keywordTest @exampleTests @example1
 Feature: Example — generic step library walkthrough
   This runs entirely against a local static HTML fixture.
   No database, no app under test, and no network access required.

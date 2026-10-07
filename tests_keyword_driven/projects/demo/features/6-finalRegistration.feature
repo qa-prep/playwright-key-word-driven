@@ -1,6 +1,6 @@
 # location: tests_keyword_driven/projects/demo/features/registrationStepByStep.feature
-# ~/projects/dash-sites-tests/run-tests.sh project=demo headed=true speed=slow debug-mode=all @tags=@demoRegister2
-# ~/projects/dash-sites-tests/run-tests.sh project=demo @tags=@demoRegister2
+# ~/projects/dash-sites-tests/run-tests.sh project=demo headed=true speed=slow debug-mode=all @tags=@finalRegister
+# ~/projects/dash-sites-tests/run-tests.sh project=demo @tags=@finalRegister
 # run-tests.sh env=demoenv
 
 # Same scenario as registration.feature, except the cleanup curl call is
@@ -12,7 +12,7 @@
 # built on your app's own admin panel, this doesn't depend on your site
 # having any particular admin-panel shape - just the one endpoint.
 
-@demoRegister7
+@finalRegister
 Feature: User registration (step by step cleanup)
   As a new user
   I want to register an account

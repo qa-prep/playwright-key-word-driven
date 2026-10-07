@@ -1,7 +1,7 @@
 # location: tests_keyword_driven/projects/dash-sites/features/register/register.feature
-# ~/projects/dash-sites-tests/run-tests.sh project=demo headed=true speed=vslow debug-mode=all @tags=@demoRegister
+# ~/projects/dash-sites-tests/run-tests.sh project=demo headed=true speed=vslow debug-mode=all @tags=@parallelRegister
 
-@demoRegister3
+@parallelRegister
 Feature: User registration
 
   # If you are running parallel registration tests with different browser, 

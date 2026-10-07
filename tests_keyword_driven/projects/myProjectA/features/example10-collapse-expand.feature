@@ -1,5 +1,8 @@
 # location: tests_keyword_driven/projects/myProjectA/features/example10-collapse-expand.feature
-#
+# ./run-tests.sh project=myProjectA tags=@example10 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example10 
+# ./run-tests.sh project=myProjectA tags=@exampleTests
+
 # "I expand"/"I collapse" are idempotent - they only click a toggle if it
 # ISN'T already in the wanted state (aria-expanded="true"/"false" on the
 # clicked element itself), so you never have to know/assert what state a
@@ -10,7 +13,7 @@
 @featureName.example10-collapse-expand @featureArea.keywordTest @exampleTests
 Feature: Example — idempotent expand/collapse
 
-  @scenarioName.example.collapseExpand.idempotentExpand
+  @scenarioName.example.collapseExpand.idempotentExpand @example10 
   Scenario: Expanding only clicks toggles that are actually collapsed
     Given I am on "+var(collapsePage)"
     # Group 1 and 3 start collapsed, Group 2 starts already expanded

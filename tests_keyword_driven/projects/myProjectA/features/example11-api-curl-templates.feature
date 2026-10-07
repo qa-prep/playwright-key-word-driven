@@ -1,5 +1,9 @@
 # location: tests_keyword_driven/projects/myProjectA/features/example11-api-curl-templates.feature
-#
+# ./run-tests.sh project=myProjectA tags=@example11 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example11 
+# ./run-tests.sh project=myProjectA tags=@exampleTests
+
+
 # Demonstrates calling a raw .curl template (curl-templates/fixture/echo.curl)
 # against a small local fixture server (fixtures/api-fixture-server.js,
 # started automatically by playwright.config.ts's webServer option) instead
@@ -13,7 +17,7 @@
 # "I should/should not see variable ... is/contains" steps used everywhere.
 
 
-@featureName.example11-api-curl-templates @featureArea.keywordTest @exampleTests
+@featureName.example11-api-curl-templates @featureArea.keywordTest @exampleTests @example11
 Feature: Example — calling a curl template and asserting on the response
 
   @scenarioName.example.curlTemplate.echo

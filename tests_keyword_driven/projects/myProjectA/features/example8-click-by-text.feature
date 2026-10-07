@@ -1,5 +1,8 @@
 # location: tests_keyword_driven/projects/myProjectA/features/example8-click-by-text.feature
-#
+# ./run-tests.sh project=myProjectA tags=@example8 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example8 
+# ./run-tests.sh project=myProjectA tags=@exampleTests
+
 # "When I click <text>" with no explicit prefix (no "css:"/"role:"/etc) goes
 # through resolveClickTarget() in locator.ts, not the generic resolveLocator()
 # cascade used by asserts/fills - it guesses what's clickable by visible
@@ -9,7 +12,7 @@
 # (substring) match. Runs entirely against a local static HTML fixture, see
 # generic/fixtures/click-by-text-page.html - no app/database/network required.
 
-@featureName.example8-click-by-text @featureArea.keywordTest @exampleTests
+@featureName.example8-click-by-text @featureArea.keywordTest @exampleTests @example8
 Feature: Example — click-by-text priority cascade
 
   @scenarioName.example.clickByText.priority

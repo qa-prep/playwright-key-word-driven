@@ -1,5 +1,9 @@
 # location: tests_keyword_driven/projects/myProjectA/features/example6-funtions.feature
-#
+# ./run-tests.sh project=myProjectA tags=@example6 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example6 
+# ./run-tests.sh project=myProjectA tags=@exampleTests
+
+
 # Demonstrates the +func(...) data-generator/transform family (see
 # tests_keyword_driven/generic/support/dataFunctions.ts) - composable,
 # e.g. +lower(+randalpha(8)). Deterministic ones are asserted directly;
@@ -8,7 +12,7 @@
 # Runs entirely against no page/app at all - this only exercises string
 # resolution, nothing else.
 
-@featureName.example6-funtions @featureArea.dataFunctions @exampleTests
+@featureName.example6-funtions @featureArea.dataFunctions @exampleTests @example6
 Feature: Composable data functions
 
   @scenarioName.example.dataFunctions.deterministic

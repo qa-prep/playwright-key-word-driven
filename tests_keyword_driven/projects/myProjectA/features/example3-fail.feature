@@ -1,6 +1,9 @@
 # location: tests_keyword_driven/projects/myProjectA/features/examplfail.feature
+# ./run-tests.sh project=myProjectA tags=@example3 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example3 
+# ./run-tests.sh project=myProjectA tags=@exampleTests
 
-@featureName.example3-fail @featureArea.fail @exampleFailTests 
+@featureName.example3-fail @featureArea.fail @exampleFailTests @example3 
 Feature: error handling
   Covers asserting and failing steps
 

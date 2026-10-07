@@ -1,5 +1,9 @@
 # location: tests_keyword_driven/projects/myProjectA/features/example9-set-field.feature
-#
+# ./run-tests.sh project=myProjectA tags=@example9 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example9 
+# ./run-tests.sh project=myProjectA tags=@exampleTests
+
+
 # "When I set field <text> to <value>" with no explicit prefix (no "css:"/
 # "role:"/etc) goes through resolveFieldLocator() in locator.ts, not the
 # generic resolveLocator() cascade used by "I click"/asserts - it guesses
@@ -11,7 +15,7 @@
 # fixture, see generic/fixtures/set-field-page.html - no app/database/
 # network required.
 
-@featureName.example9-set-field @featureArea.keywordTest @exampleTests
+@featureName.example9-set-field @featureArea.keywordTest @exampleTests @example9
 Feature: Example — set-field priority cascade
 
   @scenarioName.example.setField.exactWins

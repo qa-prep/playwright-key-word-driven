@@ -1,5 +1,8 @@
 # location: tests_keyword_driven/projects/myProjectA/features/example12-database.feature
-#
+# ./run-tests.sh project=myProjectA tags=@example12 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example12 
+# ./run-tests.sh project=myProjectA tags=@exampleTests
+
 # Demonstrates "I db ..." (database.steps.ts) - direct MySQL access via
 # _DB_HOST/_DB_PORT/_DB_NAME/_DB_USER/_DB_PASSWORD in your env file, no
 # backend endpoint required at all. Same verbs/semantics as
@@ -15,7 +18,7 @@
 # _DB_* values in your own env file and point table_name/column names below
 # at a real table before running this with tags=@exampleDbTests.
 
-@featureName.example12-database @featureArea.keywordTest @exampleDbTests
+@featureName.example12-database @featureArea.keywordTest @exampleDbTests @example12 
 Feature: Example — querying and modifying a real database table directly
 
   @scenarioName.example.database.countAndGetNewest

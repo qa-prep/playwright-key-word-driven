@@ -1,4 +1,8 @@
 # location: tests_keyword_driven/projects/myProjectA/features/example7-locators.feature
+# ./run-tests.sh project=myProjectA tags=@example7 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example7 
+# ./run-tests.sh project=myProjectA tags=@exampleTests
+
 #
 # Walks through every explicit selector-prefix strategy in
 # tests_keyword_driven/generic/support/locator.ts's buildPrefixedLocator()
@@ -9,7 +13,7 @@
 # same file). Runs entirely against a local static HTML fixture, see
 # generic/fixtures/locators-page.html - no app/database/network required.
 
-@featureName.example7-locators @featureArea.keywordTest @exampleTests
+@featureName.example7-locators @featureArea.keywordTest @exampleTests @example7 
 Feature: Example — every explicit locator prefix
 
   @scenarioName.example.locators.cssBased
