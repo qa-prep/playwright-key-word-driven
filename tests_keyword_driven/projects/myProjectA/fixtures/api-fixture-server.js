@@ -8,7 +8,7 @@
 // PROJECT=myProjectA - no other project pays for this.
 //
 // /login + /whoami exist specifically to demonstrate "I curl template
-// ... as user ... and pass ..." (apiClient.ts's getApiContextAs()) against
+// ... as user ... and pass ..." (apiClient.ts's getAsUserCurlContext()) against
 // something real: two fake accounts, a login that sets a session cookie,
 // and a whoami that reads it back - proving the SAME template, called two
 // different ways, authenticates as two different identities. The

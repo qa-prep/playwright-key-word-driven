@@ -41,21 +41,23 @@ Feature: Example — calling a curl template and asserting on the response
     Then I should see variable "echoResponse" contains "someoneElse"
     And I should not see variable "echoResponse" contains "exampleUser123"
 
-  # "I curl template ... into variable ..." always authenticates as
-  # the automation account (getAutomationApiContext() - the one shared,
-  # cached context every other call in this file re-uses). "... as user ...
-  # and pass ..." instead opens a fresh, one-shot context as whoever you
-  # give it - for calling a REAL endpoint as whichever real user already
-  # has the permission it needs (a moderator, a team owner, etc), instead
-  # of adding a test-only backend endpoint for every permission a test
-  # happens to need. auth/login.curl + fixture/whoami.curl exist purely to
-  # prove this against something real: two fake accounts (reusing the
-  # generic _AUTOMATION_API_USERNAME1/_SUPER_ADMIN_USERNAME1 credentials
-  # already defined in config/local.env), a login that sets a session
-  # cookie, and a whoami that reads it back.
+  # "I curl template ... into variable ..." (no suffix) uses NO credentials
+  # at all - fine for a public endpoint, but fixture/whoami needs an actual
+  # logged-in session to have anything to read back, so this scenario uses
+  # "... as auto" instead, which authenticates the shared, cached context
+  # as the automation account first (getAutomationUserCurlContext()).
+  # "... as user ... and pass ..." instead opens a fresh, one-shot context
+  # as whoever you give it - for calling a REAL endpoint as whichever real
+  # user already has the permission it needs (a moderator, a team owner,
+  # etc), instead of adding a test-only backend endpoint for every
+  # permission a test happens to need. auth/login.curl + fixture/whoami.curl
+  # exist purely to prove this against something real: two fake accounts
+  # (reusing the generic _AUTOMATION_API_USERNAME1/_SUPER_ADMIN_USERNAME1
+  # credentials already defined in config/local.env), a login that sets a
+  # session cookie, and a whoami that reads it back.
   @scenarioName.example.curlTemplate.asUser
   Scenario: The same template authenticates as whichever user you call it with
-    When I curl template "fixture/whoami" into variable "whoamiDefault"
+    When I curl template "fixture/whoami" into variable "whoamiDefault" as auto
     Then I should see variable "whoamiDefault" contains "_AUTOMATION_API_USERNAME1"
 
     When I curl template "fixture/whoami" as user "_SUPER_ADMIN_USERNAME1" and pass "_SUPER_ADMIN_PASSWORD1" into variable "whoamiAsAdmin"
