@@ -1,11 +1,11 @@
 // location: tests_keyword_driven/generic/support/testAutomationApi.ts
-import { getAutomationApiContext, callTemplate } from './apiClient';
+import { getAutomationUserCurlContext, callTemplate } from './apiClient';
 
 async function post(
   endpoint: 'index' | 'create' | 'batch-create' | 'update' | 'destroy' | 'delete-user-by-email' | 'delete-users-by-email-contains',
   body: Record<string, unknown>,
 ) {
-  const api = await getAutomationApiContext();
+  const api = await getAutomationUserCurlContext();
   const response = await callTemplate(api, `test-automation/${endpoint}`, { body: JSON.stringify(body) });
   const json = await response.json();
   if (!response.ok() || json?.success === false) {

@@ -74,8 +74,14 @@ export const test = base.extend<Fixtures>({
 
 export { expect };
 
+// +var(name) - a plain flat lookup for an ordinary name, but also the same
+// dot-path fallback resolveVarField() gives "I should see variable ..."
+// below: +var(row.userId) works once "row" holds JSON (eg. from "I db get
+// newest row ... into variable "row""), not just a literal flat
+// "row.userId" key, with no extra step needed - this is what every other
+// step in the framework already resolves +var(...) through.
 export function resolveVars(input: string, vars: Map<string, string>): string {
-  return resolveTokens(input, (key) => vars.get(key) ?? '');
+  return resolveTokens(input, (key) => resolveVarField(vars, key) ?? '');
 }
 
 // "I should see variable "teamSaveResponse.success" is "true"" - a dotted

@@ -92,6 +92,57 @@ When(
   },
 );
 
+// When I db get newest row "ds_core_users" where column "username" is "automationUser1" into variable "row"
+//
+// Whole-row alternative to "I db get newest ... column ... where ...": one
+// query gets every column instead of one query per column you want.
+// "I spit +var(row)" to see the raw JSON, or use it directly - +var(row)
+// resolveVarField() (see vars.ts, used by every "I should see variable ..."
+// step) already JSON-parses a variable and walks a dotted path the moment
+// the name itself contains a dot, so "I should see variable "row.email"
+// contains ..." and "I set variable "x" from field "email" of variable
+// "row"" both just work on this, no extra wiring needed.
+When(
+  'I db get newest row {string} where column {string} is {string} into variable {string}',
+  async ({ vars }, tableName, column, value, varName) => {
+    const table = resolveVars(tableName, vars);
+    assertSafeIdentifier(table, 'table_name');
+    assertSafeIdentifier(column, 'column');
+    const orderColumn = await resolveOrderColumn(table);
+    const orderClause = orderColumn ? ` ORDER BY \`${orderColumn}\` DESC` : '';
+    const rows = await dbQuery<Record<string, unknown>>(
+      `SELECT * FROM \`${table}\` WHERE \`${column}\` = ?${orderClause} LIMIT 1`,
+      [resolveVars(value, vars)],
+    );
+    const row = rows[0];
+    if (!row) {
+      throw new Error(`No row found for ${table} where ${column} is ${value}`);
+    }
+    vars.set(varName, JSON.stringify(row));
+  },
+);
+
+// When I db get newest row "ds_core_users" where column "email" like "bobsemail@example.com" into variable "row"
+When(
+  'I db get newest row {string} where column {string} like {string} into variable {string}',
+  async ({ vars }, tableName, column, value, varName) => {
+    const table = resolveVars(tableName, vars);
+    assertSafeIdentifier(table, 'table_name');
+    assertSafeIdentifier(column, 'column');
+    const orderColumn = await resolveOrderColumn(table);
+    const orderClause = orderColumn ? ` ORDER BY \`${orderColumn}\` DESC` : '';
+    const rows = await dbQuery<Record<string, unknown>>(
+      `SELECT * FROM \`${table}\` WHERE \`${column}\` LIKE ?${orderClause} LIMIT 1`,
+      [`%${resolveVars(value, vars)}%`],
+    );
+    const row = rows[0];
+    if (!row) {
+      throw new Error(`No row found for ${table} where ${column} like ${value}`);
+    }
+    vars.set(varName, JSON.stringify(row));
+  },
+);
+
 // When I db delete row "ds_core_users" where "email" is "mike+auto@test.com"
 When(
   'I db delete row {string} where {string} is {string}',

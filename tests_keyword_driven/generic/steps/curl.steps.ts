@@ -8,21 +8,41 @@
 
 import { createBdd } from 'playwright-bdd';
 import { test, resolveVars } from '../support/vars';
-import { getAutomationApiContext, getApiContextAs, callTemplate } from '../support/apiClient';
+import { getUnauthenticatedCurlContext, getAutomationUserCurlContext, getAsUserCurlContext, callTemplate } from '../support/apiClient';
 
 const { When } = createBdd(test);
 
-// When I curl template "auth/login" into variable "loginResponse"
+// When I curl template "auth/register" into variable "registerResponse"
 //
 // Runs curl-templates/<name>.curl (project-specific first, generic as
-// fallback - see curlTemplateLoader.ts) using the shared API context (which
-// has already done auth/login if that template exists). Every variable
+// fallback - see curlTemplateLoader.ts) with NO credentials at all - for a
+// public endpoint (registration, etc) that needs none. Every variable
 // currently set in the test is available to the template as +var(name).
-// Stores the response body in <varName> and the HTTP status in "<varName>.status".
+// Stores the response body in <varName> and the HTTP status in
+// "<varName>.status". Use "... as auto" for the automation account, or
+// "... as user ... and pass ..." for a specific one.
 When(
   'I curl template {string} into variable {string}',
   async ({ vars }, templateName, varName) => {
-    const api = await getAutomationApiContext();
+    const api = await getUnauthenticatedCurlContext();
+    const response = await callTemplate(api, resolveVars(templateName, vars), Object.fromEntries(vars));
+    vars.set(varName, await response.text());
+    vars.set(`${varName}.status`, String(response.status()));
+  },
+);
+
+// When I curl template "test-automation/delete-user-by-email" into variable "deleteResponse" as auto
+//
+// Same as the plain form above, but authenticates the shared, cached,
+// per-worker context as the automation account first (see
+// getAutomationUserCurlContext()) - use this for anything that actually
+// needs to be a recognized caller (eg. test-automation/* endpoints, which
+// reject anyone else server-side). The plain form needs no credentials at
+// all, which is wrong for these.
+When(
+  'I curl template {string} into variable {string} as auto',
+  async ({ vars }, templateName, varName) => {
+    const api = await getAutomationUserCurlContext();
     const response = await callTemplate(api, resolveVars(templateName, vars), Object.fromEntries(vars));
     vars.set(varName, await response.text());
     vars.set(`${varName}.status`, String(response.status()));
@@ -42,7 +62,7 @@ When(
   async ({ vars }, templateName, loginToken, passToken, varName) => {
     const login = resolveVars(loginToken, vars);
     const password = resolveVars(passToken, vars);
-    const api = await getApiContextAs(login, password);
+    const api = await getAsUserCurlContext(login, password);
     try {
       const response = await callTemplate(api, resolveVars(templateName, vars), Object.fromEntries(vars));
       vars.set(varName, await response.text());
@@ -65,7 +85,7 @@ When(
     const password = resolveVars(passToken, vars);
     const emailDomain = resolveVars('_AUTO_USER_EMAIL_DOMAIN', vars);
 
-    const api = await getAutomationApiContext();
+    const api = await getUnauthenticatedCurlContext();
     const results = await Promise.all(
       Array.from({ length: total }, async (_, i) => {
         const username = `${namePrefix}${i + 1}`;

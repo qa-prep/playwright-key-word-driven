@@ -2,18 +2,18 @@
 
 
 import { createBdd } from 'playwright-bdd';
-import { test, resolveVars } from '../support/vars';
-import { getAutomationApiContext, callTemplate } from '../support/apiClient';
+import { test, resolveVars } from '../../../generic/support/vars';
+import { getUnauthenticatedCurlContext, callTemplate } from '../../../generic/support/apiClient';
 
 const { When } = createBdd(test);
 
 
-/* we are affectively hard copying this, but hard coding the template name and passing in the variables explicitly */
+/* we are affectively copying this, but hard coding the template name and passing in the variables explicitly */
 /*
 When(
   'I curl template {string} into variable {string}',
   async ({ vars }, templateName, varName) => {
-    const api = await getAutomationApiContext();
+    const api = await getUnauthenticatedCurlContext();
     const response = await callTemplate(api, resolveVars(templateName, vars), Object.fromEntries(vars));
     vars.set(varName, await response.text());
     vars.set(`${varName}.status`, String(response.status()));
@@ -32,7 +32,7 @@ When(
     const password = resolveVars(passToken, vars);
 
 
-    const api = await getAutomationApiContext();
+    const api = await getUnauthenticatedCurlContext();
     const response = await callTemplate(api, resolveVars(templateName, vars), {
       username,
       email,
