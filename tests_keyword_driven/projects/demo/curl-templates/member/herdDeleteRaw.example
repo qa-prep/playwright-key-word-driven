@@ -1,0 +1,8 @@
+curl --url 'http://localhost/api/members/anotherbob2.554/hard-delete' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'Referer: http://localhost:5173/' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36' \
+  -H 'sec-ch-ua: "Chromium";v="154", "Google Chrome";v="154", "Not A(Brand";v="99"' \
+  -H 'content-type: application/json' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  --data-raw '{}'

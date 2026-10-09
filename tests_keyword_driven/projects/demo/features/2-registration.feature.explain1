@@ -1,6 +1,6 @@
 # location: tests_keyword_driven/projects/demo/features/registration.feature
-# ./run-tests.sh env=demo tags=@demoRegister2 debug-mode=all
-# ./run-tests.sh env=demo tags=@demoRegister2 
+# ./run-tests.sh project=demo headed=true speed=slow debug-mode=all tags=@demoRegister2
+# ./run-tests.sh project=demo tags=@demoRegister2
 # ./run-tests.sh env=demo
 
 @demoRegister2
@@ -15,13 +15,13 @@ Feature: User registration
 
     # we can use rand to enable us to run this test over and over...
     # But that will cause a build up of users, and the tests then become non-deterministic
-    # Thats not ideal, it's better if we have a pre ste that clean ups / removed this user ever time we run this test
+    # Thats not ideal, it's better if we have a pre step that clean ups / removed this user ever time we run this test
     # see @demoCleanUpCurl
 
     When I go to "http://localhost:8082/auth?mode=register"
     And I set field "Username" to "myNameIsBob+rand(7)"
     And I set field "Email" to "bobsemail+rand(7)@example.com"
-    And I set field "Password" to "bobsInsecurePassword"
+    And I set field "Password" to "+randnumeric(6)Mm!"
     And I click "Yes"
     And I click "I confirm I am over 18"
     And I click "I agree to the"

@@ -1,6 +1,6 @@
 # location: tests_keyword_driven/projects/demo/features/registrationStepByStep.feature
-# ~/projects/dash-sites-tests/run-tests.sh project=demo headed=true speed=slow debug-mode=all @tags=@demoRegister5
-# ~/projects/dash-sites-tests/run-tests.sh project=demo @tags=@demoRegister5
+# ~/projects/dash-sites-tests/run-tests.sh project=demo headed=true speed=slow debug-mode=all @tags=@demoRegister2
+# ~/projects/dash-sites-tests/run-tests.sh project=demo @tags=@demoRegister2
 # run-tests.sh env=demoenv
 
 # Same scenario as registration.feature, except the cleanup curl call is
@@ -12,7 +12,7 @@
 # built on your app's own admin panel, this doesn't depend on your site
 # having any particular admin-panel shape - just the one endpoint.
 
-@demoRegister5
+@demoRegister2
 Feature: User registration (step by step cleanup)
   As a new user
   I want to register an account
@@ -24,8 +24,9 @@ Feature: User registration (step by step cleanup)
     # the test-automation endpoint takes a single JSON body - this is the
     # exact raw request "I clean up user data for email ..." sends under
     # the hood, just not hidden behind that step.
+    
     Given I set variable "body" to "{\"email\":\"bobsemail@example.com\"}"
-    When I curl template "test-automation/delete-user-by-email" into variable "deleteResponse"
+    When I curl template "test-automation/delete-user-by-email" into variable "deleteResponse" as auto
     Then I should see variable "deleteResponse" contains "success"
 
     When I go to "http://localhost:8082/auth?mode=register"

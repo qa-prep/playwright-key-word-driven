@@ -1,6 +1,6 @@
 # location: tests_keyword_driven/projects/demo/features/registration.feature
-# ./run-tests.sh env=demo tags=@demoRegister1 debug-mode=all
-# ./run-tests.sh env=demo tags=@demoRegister1 
+# ./run-tests.sh project=demo headed=true speed=slow debug-mode=all tags=@demoRegister1
+# ./run-tests.sh project=demo tags=@demoRegister1
 # ./run-tests.sh env=demo
 
 @demoRegister1 

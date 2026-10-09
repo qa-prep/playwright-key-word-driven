@@ -1,11 +1,11 @@
 # location: tests_keyword_driven/projects/demo/features/clean-up-via-curl-aut-controller.feature
-# location: tests_keyword_driven/projects/demo/features/registration.feature
-# ./run-tests.sh env=demo tags=@demoCleanUpCurl debug-mode=all
-# ./run-tests.sh env=demo tags=@demoCleanUpCurl 
+# ./run-tests.sh project=demo headed=true speed=slow debug-mode=all tags=@demoRegister4
+# ./run-tests.sh project=demo tags=@demoRegister4
+# ./run-tests.sh env=demo
 
 
 
-@demoCleanUpCurl
+@demoRegister4
 Feature: Cean up user via curl 
 
   @demoCleanUpCurlAutController
@@ -33,8 +33,10 @@ Feature: Cean up user via curl
 
     # RUNNING THIS REQUIRES THE TEST AUTOMATION ENDPOINT ADDED BY DEVS (please make sure this endpoint is NEVER added to LIVE, it is a testing endpoing only)
 
+    # we are explaining this too early, we have not yet explained env, db, automation controller endpoints
+
     Given I set variable "body" to "{\"email\":\"bobsemail@example.com\"}"
-    When I curl template "test-automation/delete-user-by-email" into variable "deleteResponse"
+    When I curl template "test-automation/delete-user-by-email" into variable "deleteResponse" as auto
     Then I should see variable "deleteResponse" contains "success"
 
     # once you can do something like the above, you can turn this into a single step so your tests are a bit more readable
@@ -46,6 +48,7 @@ Feature: Cean up user via curl
   @demoCleanUpCurlExistingEndPoint
   Scenario: clean up user via curl of exiting end delete endpoint 
 
+    # we are explaining this too early, we have not yet explained env, db, automation controller endpoints
 
     # 2) using and existing delete end point that the site already has, the issue with this is
     # it is very likely on your site, there is an endpoint that already exist for "delete user",
@@ -62,6 +65,17 @@ Feature: Cean up user via curl
     # Instead use real API endpoint that exist on your site
 
     # before you can run this part, you will need to add to # config/demo.env
+    # Please NOTE, so far we have been running tests using project in the command (that defaults to the local env)
+    # But from now on, we will use env (since we define the secrets in env), so we will start running tests like this:
+    # ./run-tests.sh env=demo tags=@demoRegister4
+    # the env file can define the settings path, and from there which project we run (or we can add that to the run command if we prefer)
+    # defining the project tells us which folder tests are run from (but it tells us nothing about the env, that defaults to local if not defined)
+    # ./run-tests.sh env=demo project=demo tags=@demoRegister4  
+    # but if you defined the project in the settings file, just run:
+    # ./run-tests.sh env=demo tags=@demoRegister4 
+
+    # config/demo.env
+    #_SETTINGS_FILE=config/demo-settings.config
     #_DB_HOST=localhost
     #_DB_PORT=thePort
     #_DB_NAME=theDbName
@@ -80,8 +94,14 @@ Feature: Cean up user via curl
     When I spit "+var(userId)"
     When I spit "+var(username)"
 
+    #When I db get newest row "ds_core_users" where column "email" like "bobsemail" into variable "row"
+    #And I spit "+var(row)"
+    #And I set variable "userId" to "+var(row.user_id)"
+    #And I set variable "username" to "+var(row.username)" 
+
+
     # now that we have the id, delete the user for real via whatever delete endpoint your site already has
-    # You will need to change this, I have only added this as an example:  - demp/curl-templates/member/delete.curl is
+    # You will need to change this, I have only added this as an example:  - demo/curl-templates/member/delete.curl is
 
     When I curl template "member/delete" as user "_SUPER_ADMIN_USERNAME1" and pass "_SUPER_ADMIN_PASSWORD1" into variable "deleteResponse"
     Then I should see variable "deleteResponse" contains "flagged for deletion"

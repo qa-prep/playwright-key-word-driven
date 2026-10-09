@@ -1,6 +1,6 @@
 # location: tests_keyword_driven/projects/demo/features/registration.feature
-# ./run-tests.sh env=demo tags=@demoRegister3 debug-mode=all
-# ./run-tests.sh env=demo tags=@demoRegister3 
+# ./run-tests.sh project=demo headed=true speed=slow debug-mode=all tags=@demoRegister3
+# ./run-tests.sh project=demo tags=@demoRegister3
 # ./run-tests.sh env=demo
 
 @demoRegister3 
@@ -21,7 +21,7 @@ Feature: User registration
 
     # 1) Using an website automatin controller endpoint
     # This requires an automation endpoint added to the application (useful if you have many users do delete)
-    # Given I clean up user data for email "bobsemail@example.com"
+    # Given I clean up user data for email "bobsemail3@example.com"
 
     # 2) Using real curls, if they exist, to delete the users
     # This uses real delete user api endpoints (you will need to add the curls for these if your appliction can delete users)
@@ -31,8 +31,8 @@ Feature: User registration
 
 
     When I go to "http://localhost:8082/auth?mode=register"
-    And I set field "Username" to "myNameIsBob"
-    And I set field "Email" to "bobsemail@example.com"
+    And I set field "Username" to "myNameIsBob3"
+    And I set field "Email" to "bobsemail3@example.com"
     And I set field "Password" to "bobsInsecurePassword"
     And I click "Yes"
     And I click "I confirm I am over 18"

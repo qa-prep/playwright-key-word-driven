@@ -1,7 +1,7 @@
-# location: tests_keyword_driven/projects/demo/features/registrationStepByStep.feature
-# ~/projects/dash-sites-tests/run-tests.sh project=demo headed=true speed=slow debug-mode=all @tags=@finalRegister
-# ~/projects/dash-sites-tests/run-tests.sh project=demo @tags=@finalRegister
-# run-tests.sh env=demoenv
+# location: tests_keyword_driven/projects/demo/features/100-finalRegistration.feature
+# ./run-tests.sh project=demo headed=true speed=slow debug-mode=all tags=@demoRegiste100
+# ./run-tests.sh project=demo tags=@demoRegiste100
+# ./run-tests.sh env=demo
 
 # Same scenario as registration.feature, except the cleanup curl call is
 # shown explicitly instead of hidden behind "I clean up user data for email
@@ -12,7 +12,7 @@
 # built on your app's own admin panel, this doesn't depend on your site
 # having any particular admin-panel shape - just the one endpoint.
 
-@finalRegister
+@demoRegiste100
 Feature: User registration (step by step cleanup)
   As a new user
   I want to register an account
@@ -20,11 +20,12 @@ Feature: User registration (step by step cleanup)
 
   Scenario: A new user successfully registers for an account
 
-    Given I clean up user data for email contains "bobsemail@example.com"
+    Given I curl delete user data for email contains "bob-final@_AUTO_USER_EMAIL_DOMAIN"
+    # And I curl register username "bob-final" email "bob-final@_AUTO_USER_EMAIL_DOMAIN" and pass "_AUTO_USER_PASS"
 
     When I go to "_APP_URL/auth?mode=register"
-    And I set field "Username" to "myNameIsBob"
-    And I set field "Email" to "bobsemail@example.com"
+    And I set field "Username" to "bob-final"
+    And I set field "Email" to "bob-final@_AUTO_USER_EMAIL_DOMAIN"
     And I set field "Password" to "_AUTO_USER_PASS"
     And I click "Yes"
     And I click "I confirm I am over 18"

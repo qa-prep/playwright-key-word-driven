@@ -1,6 +1,10 @@
 # location: tests_keyword_driven/projects/demo/curl-templates/member/hard-delete.curl
-# _API_URL will be defined in your env file. +var(username)/+var(userId) are supplied by whatever test calls this. Real endpoint
-
+# _API_URL will be defined in your env file. +var(username)/+var(userId) are
+# supplied by whatever test calls this. Real endpoint
+# (MemberPublicController::hardDeleteMember()) - admin only, and only works
+# on a member already flagged for deletion (status 'soft-deleted' - see
+# member/delete.curl, which must be called first). A regular admin session
+# is enough, no admin-login needed.
 
 curl --url '_API_URL/members/+var(username).+var(userId)/hard-delete' \
   -H 'Content-Type: application/json' \
