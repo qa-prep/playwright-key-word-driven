@@ -203,7 +203,7 @@ if [ "$_DEBUG_MODE" != "off" ]; then
     ORANGE='\033[38;5;208m'
     NC='\033[0m'
     MSG="[debug-mode=${_DEBUG_MODE}] forcing a single worker — tests will run serially, not in parallel"
-    ENVMSG="[env: $ENV | browser: $BROWSERS_RESOLVED | speed: $_SPEED | headed: $_HEADED | report: $_REPORT_MODE"
+    ENVMSG="[env: $ENV | project: $PROJECT | browser: $BROWSERS_RESOLVED | speed: $_SPEED | headed: $_HEADED | report: $_REPORT_MODE"
     APPMSG="[app_url: ${_APP_URL:-unset} | api_url: ${_API_URL:-unset}]"
     BORDER=$(printf '%*s' "$((${#MSG} + 4))" '' | tr ' ' '*')
     echo -e "${ORANGE}${BORDER}${NC}"
