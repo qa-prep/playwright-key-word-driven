@@ -198,24 +198,36 @@ if [ "$_SILENT" != "true" ]; then
 fi
 
 
+TAGS_CLEAN=$(echo "$TAGS" | tr -d ' ')
+
+# avoid --tags=@example1 greedy regex matching @example11
+TAGS_GREP=""
+if [ -n "$TAGS_CLEAN" ]; then
+  IFS=',' read -ra TAGS_ARR <<< "$TAGS_CLEAN"
+  for tag in "${TAGS_ARR[@]}"; do
+    if [ -n "$TAGS_GREP" ]; then TAGS_GREP="${TAGS_GREP}|"; fi
+    TAGS_GREP="${TAGS_GREP}${tag}(?![A-Za-z0-9_.-])"
+  done
+fi
+
 if [ "$_DEBUG_MODE" != "off" ]; then
   if [ "$_SILENT" != "true" ]; then
     ORANGE='\033[38;5;208m'
     NC='\033[0m'
     MSG="[debug-mode=${_DEBUG_MODE}] forcing a single worker — tests will run serially, not in parallel"
-    ENVMSG="[env: $ENV | project: $PROJECT | browser: $BROWSERS_RESOLVED | speed: $_SPEED | headed: $_HEADED | report: $_REPORT_MODE"
+    ENVMSG="[env: $ENV | project: $PROJECT | browser: $BROWSERS_RESOLVED "
+    TAGMSG="[tags: $TAGS_CLEAN | speed: $_SPEED | headed: $_HEADED | report: $_REPORT_MODE"
     APPMSG="[app_url: ${_APP_URL:-unset} | api_url: ${_API_URL:-unset}]"
     BORDER=$(printf '%*s' "$((${#MSG} + 4))" '' | tr ' ' '*')
     echo -e "${ORANGE}${BORDER}${NC}"
     echo -e "${ORANGE}* ${MSG} *${NC}"
     echo -e "${ORANGE}* ${ENVMSG} *${NC}"
+    echo -e "${ORANGE}* ${TAGMSG} *${NC}"
     echo -e "${ORANGE}* ${APPMSG} *${NC}"
     echo -e "${ORANGE}${BORDER}${NC}"
   fi
   export PW_DEBUG_WARNED=1
 fi
-
-TAGS_CLEAN=$(echo "$TAGS" | tr -d ' ')
 
 REPORT_DATE="$(date +%Y-%m-%d)"
 REPORT_TIME="$(date +%H%M%S)"
@@ -252,7 +264,7 @@ run_spec() {
     args+=("--project=spec-${b}")
   done
   if [ -n "$TAGS_CLEAN" ]; then
-    args+=("--grep=$(echo "$TAGS_CLEAN" | tr ',' '|')")
+    args+=("--grep=$TAGS_GREP")
   fi
   if [ "$_HEADED" = "true" ]; then
     args+=("--headed")
@@ -300,7 +312,7 @@ run_phase() {
   export REPORT_DIR="${REPORT_BASE}/${kind}-${num}"
   local args=(test "--project=${kind}-${num}-${PROJECT}")
   if [ -n "$TAGS_CLEAN" ]; then
-    args+=("--grep=$(echo "$TAGS_CLEAN" | tr ',' '|')")
+    args+=("--grep=$TAGS_GREP")
   fi
   if [ "$_HEADED" = "true" ]; then
     args+=("--headed")
@@ -368,7 +380,7 @@ run_feature() {
       test_args+=("--project=feature-${PROJECT}-${b}")
     done
     if [ -n "$TAGS_CLEAN" ]; then
-      test_args+=("--grep=$(echo "$TAGS_CLEAN" | tr ',' '|')")
+      test_args+=("--grep=$TAGS_GREP")
     fi
     if [ "$_HEADED" = "true" ]; then
       test_args+=("--headed")
