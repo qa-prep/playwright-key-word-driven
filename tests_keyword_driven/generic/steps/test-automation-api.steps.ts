@@ -1,90 +1,106 @@
 // location: tests_keyword_driven/generic/steps/test-automation-api.steps.ts
+//
+// Every step below is a thin adapter: resolve the Gherkin strings, call the
+// plain exported function declared directly under it, store the result.
+// The function is what's reusable from another step file directly.
+
 import { createBdd } from 'playwright-bdd';
 import { test, resolveVars } from '../support/vars';
 import { testAutomationApi } from '../support/testAutomationApi';
 
 const { When } = createBdd(test);
 
-
-
-
 // When I api count "ds_core_users" rows where column "email" like "mike@test.com" into variable "userCount"
 When(
   'I api count {string} rows where column {string} like {string} into variable {string}',
   async ({ vars }, tableName, column, value, varName) => {
-    const result = await testAutomationApi.index({
-      table_name: resolveVars(tableName, vars),
-      table_key: column,
-      table_operator: 'LIKE',
-      table_value: `%${resolveVars(value, vars)}%`,
-      limit: 1000,
-    });
-    const count = Array.isArray(result?.data?.rows) ? result.data.rows.length : 0;
+    const count = await apiCountRowsLike(resolveVars(tableName, vars), column, resolveVars(value, vars));
     vars.set(varName, String(count));
   },
 );
+
+export async function apiCountRowsLike(tableName: string, column: string, value: string): Promise<number> {
+  const result = await testAutomationApi.index({
+    table_name: tableName,
+    table_key: column,
+    table_operator: 'LIKE',
+    table_value: `%${value}%`,
+    limit: 1000,
+  });
+  return Array.isArray(result?.data?.rows) ? result.data.rows.length : 0;
+}
 
 // When I api count "ds_core_users" rows where column "email" is "mike@test.com" into variable "userCount"
 When(
   'I api count {string} rows where column {string} is {string} into variable {string}',
   async ({ vars }, tableName, column, value, varName) => {
-    const result = await testAutomationApi.index({
-      table_name: resolveVars(tableName, vars),
-      table_key: column,
-      table_operator: '=',
-      table_value: resolveVars(value, vars),
-      limit: 1000,
-    });
-    const count = Array.isArray(result?.data?.rows) ? result.data.rows.length : 0;
+    const count = await apiCountRowsIs(resolveVars(tableName, vars), column, resolveVars(value, vars));
     vars.set(varName, String(count));
   },
 );
+
+export async function apiCountRowsIs(tableName: string, column: string, value: string): Promise<number> {
+  const result = await testAutomationApi.index({
+    table_name: tableName,
+    table_key: column,
+    table_operator: '=',
+    table_value: value,
+    limit: 1000,
+  });
+  return Array.isArray(result?.data?.rows) ? result.data.rows.length : 0;
+}
 
 // When I api get newest "ds_core_users" column "user_id" where column "username" is "automationUser1" into variable "userId"
 When(
   'I api get newest {string} column {string} where column {string} is {string} into variable {string}',
   async ({ vars }, tableName, colForExtraction, column, value, varName) => {
-    const result = await testAutomationApi.index({
-      table_name: resolveVars(tableName, vars),
-      table_key: column,
-      table_operator: '=',
-      table_value: resolveVars(value, vars),
-      order_key: 'updated_at',
-      order_value: 'DESC',
-      limit: 1,
-    });
-    const row = result?.data?.rows?.[0];
-    if (!row || !(colForExtraction in row)) {
-      throw new Error(
-        `No row found (or missing column "${colForExtraction}") for ${tableName} where ${column} is ${value}`,
-      );
-    }
-    vars.set(varName, String(row[colForExtraction]));
+    const extracted = await apiGetNewestColumnIs(resolveVars(tableName, vars), colForExtraction, column, resolveVars(value, vars));
+    vars.set(varName, extracted);
   },
 );
+
+export async function apiGetNewestColumnIs(tableName: string, colForExtraction: string, column: string, value: string): Promise<string> {
+  const result = await testAutomationApi.index({
+    table_name: tableName,
+    table_key: column,
+    table_operator: '=',
+    table_value: value,
+    order_key: 'updated_at',
+    order_value: 'DESC',
+    limit: 1,
+  });
+  const row = result?.data?.rows?.[0];
+  if (!row || !(colForExtraction in row)) {
+    throw new Error(`No row found (or missing column "${colForExtraction}") for ${tableName} where ${column} is ${value}`);
+  }
+  return String(row[colForExtraction]);
+}
 
 // When I api get newest "ds_core_users" column "user_id" where column "email" like "bobsemail@example.com" into variable "userId"
 When(
   'I api get newest {string} column {string} where column {string} like {string} into variable {string}',
   async ({ vars }, tableName, colForExtraction, column, value, varName) => {
-    const result = await testAutomationApi.index({
-      table_name: resolveVars(tableName, vars),
-      table_key: column,
-      table_operator: 'LIKE',
-      table_value: `%${resolveVars(value, vars)}%`,
-      order_key: 'updated_at',
-      order_value: 'DESC',
-      limit: 1,
-    });
-    const row = result?.data?.rows?.[0];
-    if (!row || !(colForExtraction in row)) {
-      throw new Error(
-        `No row found (or missing column "${colForExtraction}") for ${tableName} where ${column} like ${value}`,
-      );
-    }
-    vars.set(varName, String(row[colForExtraction]));
+    const extracted = await apiGetNewestColumnLike(resolveVars(tableName, vars), colForExtraction, column, resolveVars(value, vars));
+    vars.set(varName, extracted);
   },
 );
+
+export async function apiGetNewestColumnLike(tableName: string, colForExtraction: string, column: string, value: string): Promise<string> {
+  const result = await testAutomationApi.index({
+    table_name: tableName,
+    table_key: column,
+    table_operator: 'LIKE',
+    table_value: `%${value}%`,
+    order_key: 'updated_at',
+    order_value: 'DESC',
+    limit: 1,
+  });
+  const row = result?.data?.rows?.[0];
+  if (!row || !(colForExtraction in row)) {
+    throw new Error(`No row found (or missing column "${colForExtraction}") for ${tableName} where ${column} like ${value}`);
+  }
+  return String(row[colForExtraction]);
+}
 
 // When I api get newest row "ds_core_users" where column "username" is "automationUser1" into variable "row"
 //
@@ -97,55 +113,69 @@ When(
 When(
   'I api get newest row {string} where column {string} is {string} into variable {string}',
   async ({ vars }, tableName, column, value, varName) => {
-    const result = await testAutomationApi.index({
-      table_name: resolveVars(tableName, vars),
-      table_key: column,
-      table_operator: '=',
-      table_value: resolveVars(value, vars),
-      order_key: 'updated_at',
-      order_value: 'DESC',
-      limit: 1,
-    });
-    const row = result?.data?.rows?.[0];
-    if (!row) {
-      throw new Error(`No row found for ${tableName} where ${column} is ${value}`);
-    }
+    const row = await apiGetNewestRowIs(resolveVars(tableName, vars), column, resolveVars(value, vars));
     vars.set(varName, JSON.stringify(row));
   },
 );
+
+export async function apiGetNewestRowIs(tableName: string, column: string, value: string): Promise<Record<string, unknown>> {
+  const result = await testAutomationApi.index({
+    table_name: tableName,
+    table_key: column,
+    table_operator: '=',
+    table_value: value,
+    order_key: 'updated_at',
+    order_value: 'DESC',
+    limit: 1,
+  });
+  const row = result?.data?.rows?.[0];
+  if (!row) {
+    throw new Error(`No row found for ${tableName} where ${column} is ${value}`);
+  }
+  return row;
+}
 
 // When I api get newest row "ds_core_users" where column "email" like "bobsemail@example.com" into variable "row"
 When(
   'I api get newest row {string} where column {string} like {string} into variable {string}',
   async ({ vars }, tableName, column, value, varName) => {
-    const result = await testAutomationApi.index({
-      table_name: resolveVars(tableName, vars),
-      table_key: column,
-      table_operator: 'LIKE',
-      table_value: `%${resolveVars(value, vars)}%`,
-      order_key: 'updated_at',
-      order_value: 'DESC',
-      limit: 1,
-    });
-    const row = result?.data?.rows?.[0];
-    if (!row) {
-      throw new Error(`No row found for ${tableName} where ${column} like ${value}`);
-    }
+    const row = await apiGetNewestRowLike(resolveVars(tableName, vars), column, resolveVars(value, vars));
     vars.set(varName, JSON.stringify(row));
   },
 );
+
+export async function apiGetNewestRowLike(tableName: string, column: string, value: string): Promise<Record<string, unknown>> {
+  const result = await testAutomationApi.index({
+    table_name: tableName,
+    table_key: column,
+    table_operator: 'LIKE',
+    table_value: `%${value}%`,
+    order_key: 'updated_at',
+    order_value: 'DESC',
+    limit: 1,
+  });
+  const row = result?.data?.rows?.[0];
+  if (!row) {
+    throw new Error(`No row found for ${tableName} where ${column} like ${value}`);
+  }
+  return row;
+}
 
 // When I api delete row "ds_core_users" where "email" is "mike+auto@test.com"
 When(
   'I api delete row {string} where {string} is {string}',
   async ({ vars }, tableName, column, value) => {
-    await testAutomationApi.destroy({
-      table_name: resolveVars(tableName, vars),
-      table_key: column,
-      table_value: resolveVars(value, vars),
-    });
+    await apiDeleteRow(resolveVars(tableName, vars), column, resolveVars(value, vars));
   },
 );
+
+export async function apiDeleteRow(tableName: string, column: string, value: string): Promise<void> {
+  await testAutomationApi.destroy({
+    table_name: tableName,
+    table_key: column,
+    table_value: value,
+  });
+}
 
 // When I api update table "ds_core_users" column "email_verified_at" where "user_id" is "+var(userId)" to value "2026-09-24 10:00:00"
 //
@@ -157,12 +187,16 @@ When(
 When(
   'I api update table {string} column {string} where {string} is {string} to value {string}',
   async ({ vars }, tableName, columnToUpdate, whereColumn, whereValue, toValue) => {
-    await testAutomationApi.update({
-      table_name: resolveVars(tableName, vars),
-      table_key: whereColumn,
-      table_value: resolveVars(whereValue, vars),
-      update_key: columnToUpdate,
-      update_value: resolveVars(toValue, vars),
-    });
+    await apiUpdateTable(resolveVars(tableName, vars), columnToUpdate, whereColumn, resolveVars(whereValue, vars), resolveVars(toValue, vars));
   },
 );
+
+export async function apiUpdateTable(tableName: string, columnToUpdate: string, whereColumn: string, whereValue: string, toValue: string): Promise<void> {
+  await testAutomationApi.update({
+    table_name: tableName,
+    table_key: whereColumn,
+    table_value: whereValue,
+    update_key: columnToUpdate,
+    update_value: toValue,
+  });
+}

@@ -5,31 +5,41 @@
 // in data.steps.ts/database.steps.ts. Named "curl", not "api", because everything
 // in this framework ultimately hits an API - what's specific to this file is
 // that it's driven by .curl template files, not the test-automation API.
+//
+// Every step below is a thin adapter: resolve the Gherkin strings, call the
+// plain exported function declared directly under it, store the result.
+// The function is what's reusable from another step file (a custom one-off
+// step, etc) - call it directly instead of re-deriving the context/dispose
+// dance.
 
 import { createBdd } from 'playwright-bdd';
 import { test, resolveVars } from '../support/vars';
 import { getUnauthenticatedCurlContext, getAutomationUserCurlContext, getAsUserCurlContext, callTemplate } from '../support/apiClient';
+import type { CurlVars } from '../support/curlTemplateLoader';
+import type { APIResponse } from '@playwright/test';
 
 const { When } = createBdd(test);
 
 // When I curl template "auth/register" into variable "registerResponse"
 //
-// Runs curl-templates/<name>.curl (project-specific first, generic as
-// fallback - see curlTemplateLoader.ts) with NO credentials at all - for a
-// public endpoint (registration, etc) that needs none. Every variable
-// currently set in the test is available to the template as +var(name).
-// Stores the response body in <varName> and the HTTP status in
-// "<varName>.status". Use "... as auto" for the automation account, or
-// "... as user ... and pass ..." for a specific one.
+// No credentials at all - for a public endpoint (registration, etc) that
+// needs none. Every variable currently set in the test is available to the
+// template as +var(name). Stores the response body in <varName> and the
+// HTTP status in "<varName>.status". Use "... as auto" for the automation
+// account, or "... as user ... and pass ..." for a specific one.
 When(
   'I curl template {string} into variable {string}',
   async ({ vars }, templateName, varName) => {
-    const api = await getUnauthenticatedCurlContext();
-    const response = await callTemplate(api, resolveVars(templateName, vars), Object.fromEntries(vars));
+    const response = await curlUnauthenticated(resolveVars(templateName, vars), Object.fromEntries(vars));
     vars.set(varName, await response.text());
     vars.set(`${varName}.status`, String(response.status()));
   },
 );
+
+export async function curlUnauthenticated(templateName: string, vars: CurlVars): Promise<APIResponse> {
+  const api = await getUnauthenticatedCurlContext();
+  return callTemplate(api, templateName, vars);
+}
 
 // When I curl template "test-automation/delete-user-by-email" into variable "deleteResponse" as auto
 //
@@ -42,12 +52,16 @@ When(
 When(
   'I curl template {string} into variable {string} as auto',
   async ({ vars }, templateName, varName) => {
-    const api = await getAutomationUserCurlContext();
-    const response = await callTemplate(api, resolveVars(templateName, vars), Object.fromEntries(vars));
+    const response = await curlAsAuto(resolveVars(templateName, vars), Object.fromEntries(vars));
     vars.set(varName, await response.text());
     vars.set(`${varName}.status`, String(response.status()));
   },
 );
+
+export async function curlAsAuto(templateName: string, vars: CurlVars): Promise<APIResponse> {
+  const api = await getAutomationUserCurlContext();
+  return callTemplate(api, templateName, vars);
+}
 
 // When I curl template "team/approve-draft" as user "_SUPER_ADMIN_USERNAME1" and pass "_SUPER_ADMIN_PASSWORD1" into variable "approveResponse"
 //
@@ -60,53 +74,33 @@ When(
 When(
   'I curl template {string} as user {string} and pass {string} into variable {string}',
   async ({ vars }, templateName, loginToken, passToken, varName) => {
-    const login = resolveVars(loginToken, vars);
-    const password = resolveVars(passToken, vars);
-    const api = await getAsUserCurlContext(login, password);
-    try {
-      const response = await callTemplate(api, resolveVars(templateName, vars), Object.fromEntries(vars));
-      vars.set(varName, await response.text());
-      vars.set(`${varName}.status`, String(response.status()));
-    } finally {
-      await api.dispose();
-    }
-  },
-);
-
-// Before you can use this, you will need to add your own curl template ie:
-// tests_keyword_driven/projects/<project_name>/curl-templates/auth/register.curl
-// When I curl register "5" users using name prefix "_AUTO_USER_MIKES_NAME_PREFIX" email prefix "_AUTO_USER_MIKES_EMAIL_PREFIX" and pass "_AUTO_USER_MIKES_PASS"
-When(
-  'I curl register {string} users using name prefix {string} email prefix {string} and pass {string}',
-  async ({ vars }, count, namePrefixToken, emailPrefixToken, passToken) => {
-    const total = parseInt(resolveVars(count, vars), 10);
-    const namePrefix = resolveVars(namePrefixToken, vars);
-    const emailPrefix = resolveVars(emailPrefixToken, vars);
-    const password = resolveVars(passToken, vars);
-    const emailDomain = resolveVars('_AUTO_USER_EMAIL_DOMAIN', vars);
-
-    const api = await getUnauthenticatedCurlContext();
-    const results = await Promise.all(
-      Array.from({ length: total }, async (_, i) => {
-        const username = `${namePrefix}${i + 1}`;
-        const response = await callTemplate(api, 'auth/register', { // this will find the project specific curl if there is one
-          username,
-          email: `${emailPrefix}${i + 1}@${emailDomain}`,
-          password,
-        });
-        const json = await response.json().catch(() => null);
-        const ok = response.ok() && json?.success !== false;
-        return { username, ok, status: response.status(), body: json ?? (await response.text().catch(() => '')) };
-      }),
+    const result = await curlAsUser(
+      resolveVars(templateName, vars), resolveVars(loginToken, vars), resolveVars(passToken, vars), Object.fromEntries(vars),
     );
-
-    const failures = results.filter((r) => !r.ok);
-    if (failures.length > 0) {
-      throw new Error(
-        `auth/register failed for ${failures.length}/${total} user(s):\n` +
-          failures.map((f) => `  ${f.username}: ${f.status} ${JSON.stringify(f.body)}`).join('\n'),
-      );
-    }
+    vars.set(varName, result.text);
+    vars.set(`${varName}.status`, String(result.status));
   },
 );
+
+// Returns { text, status } rather than the raw APIResponse - unlike
+// curlUnauthenticated()/curlAsAuto() above (shared, never-disposed
+// contexts), this context is one-shot and gets disposed before returning,
+// so the response body has to be read here, before that happens, not left
+// for the caller to read lazily (APIResponse.text()/.json() throw once
+// their context is disposed).
+export async function curlAsUser(
+  templateName: string,
+  login: string,
+  password: string,
+  vars: CurlVars,
+): Promise<{ text: string; status: number }> {
+  const api = await getAsUserCurlContext(login, password);
+  try {
+    const response = await callTemplate(api, templateName, vars);
+    return { text: await response.text(), status: response.status() };
+  } finally {
+    await api.dispose();
+  }
+}
+
 
