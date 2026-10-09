@@ -16,7 +16,7 @@ Feature: User registration
 
     # When I go to "_APP_URL/auth?mode=register"
     # And I set field "Username" to "myNameIsBob"
-    # And I set field "Email" to "bobsemail@_AUTO_USER_EMAIL_DOMAIN"
+    # And I set field "Email" to "testprefix_bobsemail@_AUTO_USER_EMAIL_DOMAIN"
     # And I set field "Password" to "bobsInsecurePassword"
     # And I click "Yes"
     # And I click "I confirm I am over 18"
@@ -26,7 +26,7 @@ Feature: User registration
     # Then I should see viewport text "Welcome"
 
 
-    Given I curl register username "bob31" email "bob31@_AUTO_USER_EMAIL_DOMAIN" and pass "_AUTO_USER_PASS"
+    Given I curl register username "bob31" email "testprefix_bob31@_AUTO_USER_EMAIL_DOMAIN" and pass "_AUTO_USER_PASS"
 
 
     # but we're not finished yet, we need to clean up this user (at the start of the test), and we additional want a method to bulk create users

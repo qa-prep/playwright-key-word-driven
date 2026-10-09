@@ -18,6 +18,10 @@ Feature: Create test users
     And I set variable "allNamePrefix" to "AutoGenUser"
 
     Given I curl delete user data for email contains "+var(allEmailPrefix)"
+    
+    # other demo test data:
+    And I curl delete user data for email contains "testprefix"
+
 
     # NOTE: change the table name so your users table: (it wont ds_core_users)
 

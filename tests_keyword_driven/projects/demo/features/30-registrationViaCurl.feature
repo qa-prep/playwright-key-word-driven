@@ -16,7 +16,7 @@ Feature: User registration
 
     # When I go to "http://localhost:8082/auth?mode=register"
     # And I set field "Username" to "myNameIsBob"
-    # And I set field "Email" to "bobsemail@example.com"
+    # And I set field "Email" to "testprefix_bobsemail@example.com"
     # And I set field "Password" to "bobsInsecurePassword"
     # And I click "Yes"
     # And I click "I confirm I am over 18"
@@ -27,7 +27,7 @@ Feature: User registration
 
 
     Given I set variable "username" to "anotherBob2"
-    And I set variable "email" to "anotherBob2@example.com"
+    And I set variable "email" to "testprefix_anotherBob2@example.com"
     And I set variable "password" to "4ThisIsntVerySecure!"
     When I curl template "auth/register" into variable "curlResponse"
     And I spit "+var(curlResponse)"

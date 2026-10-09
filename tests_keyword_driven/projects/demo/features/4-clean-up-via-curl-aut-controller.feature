@@ -89,10 +89,11 @@ Feature: Cean up user via curl
     When I db count "ds_core_users" rows where column "email" like "bobsemail" into variable "likeCount"
     And I spit "+var(likeCount)"
 
-    When I db get newest "ds_core_users" column "user_id" where column "email" like "bobsemail" into variable "userId"
-    When I db get newest "ds_core_users" column "username" where column "user_id" is "+var(userId)" into variable "username"
-    When I spit "+var(userId)"
-    When I spit "+var(username)"
+    # uncomment out once you have data to try these:
+    #When I db get newest "ds_core_users" column "user_id" where column "email" like "bobsemail" into variable "userId"
+    #When I db get newest "ds_core_users" column "username" where column "user_id" is "+var(userId)" into variable "username"
+    #When I spit "+var(userId)"
+    #When I spit "+var(username)"
 
     #When I db get newest row "ds_core_users" where column "email" like "bobsemail" into variable "row"
     #And I spit "+var(row)"
@@ -103,8 +104,8 @@ Feature: Cean up user via curl
     # now that we have the id, delete the user for real via whatever delete endpoint your site already has
     # You will need to change this, I have only added this as an example:  - demo/curl-templates/member/delete.curl is
 
-    When I curl template "member/delete" as user "_SUPER_ADMIN_USERNAME1" and pass "_SUPER_ADMIN_PASSWORD1" into variable "deleteResponse"
-    Then I should see variable "deleteResponse" contains "flagged for deletion"
+    # When I curl template "member/delete" as user "_SUPER_ADMIN_USERNAME1" and pass "_SUPER_ADMIN_PASSWORD1" into variable "deleteResponse"
+    # Then I should see variable "deleteResponse" contains "flagged for deletion"
 
     # I also needed a hard delete:
     # When I curl template "member/hard-delete" as user "_SUPER_ADMIN_USERNAME1" and pass "_SUPER_ADMIN_PASSWORD1" into variable "deleteResponse"
