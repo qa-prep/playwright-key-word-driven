@@ -1,6 +1,6 @@
-# location: tests_keyword_driven/projects/myProjectA/features/example7-locators.feature
-# ./run-tests.sh project=myProjectA tags=@example7 debug-mode=all headed=true speed=slow
-# ./run-tests.sh project=myProjectA tags=@example7 
+# location: tests_keyword_driven/projects/myProjectA/features/example3-locators.feature
+# ./run-tests.sh project=myProjectA tags=@example3 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example3 
 # ./run-tests.sh project=myProjectA tags=@exampleTests
 
 #
@@ -13,7 +13,7 @@
 # same file). Runs entirely against a local static HTML fixture, see
 # generic/fixtures/locators-page.html - no app/database/network required.
 
-@featureName.example7-locators @featureArea.keywordTest @exampleTests @example7 
+@featureName.example3-locators @featureArea.keywordTest @exampleTests @example3 
 Feature: Example — every explicit locator prefix
 
   @scenarioName.example.locators.cssBased

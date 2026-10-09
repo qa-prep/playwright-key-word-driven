@@ -38,7 +38,7 @@ jobs:
           cp installer/canonical/default-settings.config config/ci-default-settings.config
 
       - name: Run keyword-driven example tests
-        run: ./run-tests.sh project=myProjectA tags=@featureName.example1-basic,@featureName.example2-tabs env=ci
+        run: ./run-tests.sh project=myProjectA tags=@featureName.example1-basic,@featureName.example2-tabs,@featureName.example3-locators env=ci
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

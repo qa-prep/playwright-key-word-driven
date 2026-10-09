@@ -1,9 +1,9 @@
-# location: tests_keyword_driven/projects/myProjectA/features/examplfail.feature
-# ./run-tests.sh project=myProjectA tags=@example3 debug-mode=all headed=true speed=slow
-# ./run-tests.sh project=myProjectA tags=@example3 
+# location: tests_keyword_driven/projects/myProjectA/features/example5-fail.feature
+# ./run-tests.sh project=myProjectA tags=@example5 debug-mode=all headed=true speed=slow
+# ./run-tests.sh project=myProjectA tags=@example5 
 # ./run-tests.sh project=myProjectA tags=@exampleTests
 
-@featureName.example3-fail @featureArea.fail @exampleFailTests @example3 
+@featureName.example5-fail @featureArea.fail @exampleFailTests @example5
 Feature: error handling
   Covers asserting and failing steps
 
