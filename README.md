@@ -11,6 +11,8 @@ And get it installed in about four commands.
 A keyword-driven Playwright + BDD (Gherkin/Cucumber) test automation framework for E2E, API, and database-backed system testing — built for multi-project reuse.
 Want to run these tests automatically in CI/CD (GitHub Actions)? See [CI-CD.md](./CI-CD.md).
 
+New to the framework? Follow the free video tutorial series: [Playwright Keyword Driven Framework](https://qa-prep.com/tutorial/playwright-keyword-driven-framework.12?lesson=installation).  Installation, writing steps from Figma, curling API endpoints, database querying, and more.
+
 ## What a test looks like
 
 ```gherkin

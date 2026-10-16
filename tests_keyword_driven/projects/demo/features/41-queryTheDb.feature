@@ -1,6 +1,6 @@
 # location: tests_keyword_driven/projects/demo/features/41-queryTheDb.feature
 # ./run-tests.sh env=demo headed=true speed=slow debug-mode=all tags=@demoRegister41
-# ./run-tests.sh env=emo @tags=demoRegister41
+# ./run-tests.sh env=demo tags=@demoRegister41
 # ./run-tests.sh env=demo
 
 @demoRegister41
